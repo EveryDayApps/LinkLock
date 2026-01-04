@@ -1,3 +1,6 @@
+@import './ui/styles/globals.css';
+@import './ui/styles/animations.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

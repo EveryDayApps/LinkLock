@@ -1,0 +1,53 @@
+/* Design Tokens for Link Lock */
+
+:root {
+  /* Dark Theme Colors */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1f1f1f;
+  --bg-accent: #2a2a2a;
+
+  --text-primary: #e5e5e5;
+  --text-secondary: #a3a3a3;
+  --text-muted: #666666;
+
+  --border: #2a2a2a;
+  --border-focus: #404040;
+
+  --accent-primary: #ffbf3b;
+  --accent-danger: #ef4444;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+
+  /* Typography */
+  --font-sans: "Inter", -apple-system, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Font Sizes */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
+
+  /* Spacing Scale */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+
+  /* Component Styles */
+  --btn-height: 2.5rem; /* 40px */
+  --btn-padding: 0.75rem 1.5rem;
+  --btn-radius: 0.5rem; /* 8px */
+
+  --input-height: 2.5rem; /* 40px */
+  --input-padding: 0.75rem 1rem;
+  --input-radius: 0.5rem; /* 8px */
+
+  --card-radius: 0.75rem; /* 12px */
+  --card-padding: 1.5rem; /* 24px */
+}
