@@ -1,0 +1,21 @@
+{
+   "manifest_version": 3,
+   "name": "LinkLock",
+   "version": "1.0.0",
+   "description": "LinkLock Extension",
+   "options_page": "index.html",
+   "action": {
+      "default_popup": "index.html",
+      "default_icon": {
+         "16": "vite.svg",
+         "48": "vite.svg",
+         "128": "vite.svg"
+      }
+   },
+   "icons": {
+      "16": "vite.svg",
+      "48": "vite.svg",
+      "128": "vite.svg"
+   },
+   "permissions": []
+}

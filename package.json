@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:chrome": "rm -rf dist_chrome && vite build --mode chrome && node scripts/copy_manifest.js chrome",
+    "build:firefox": "rm -rf dist_firefox && vite build --mode firefox && node scripts/copy_manifest.js firefox",
+    "build:extensions": "yarn build:chrome && yarn build:firefox",
     "lint": "eslint .",
     "preview": "vite preview"
   },
