@@ -1,4 +1,4 @@
-import { detectBrowser } from "@/lib/browser_utils";
+import { detectBrowser } from "@/utils/browser_utils";
 import { BaseBrowserApi } from "./BaseBrowserApi";
 import { ChromeBrowserApi } from "./ChromeBrowserApi";
 import { FireFoxBrowserApi } from "./FireFoxBrowserApi";
