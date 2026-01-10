@@ -128,14 +128,7 @@ export function ProfilesTab() {
           const isActive = profile.id === activeProfileId;
 
           return (
-            <Card
-              key={profile.id}
-              className={`transition-all ${
-                isActive
-                  ? "border-primary bg-primary/5"
-                  : "hover:border-accent-foreground/20"
-              }    `}
-            >
+            <Card key={profile.id}>
               <CardContent className="flex items-center justify-center">
                 <div className="flex items-center justify-between w-full p-2">
                   <div className="flex items-center gap-4">

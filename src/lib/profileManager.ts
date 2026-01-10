@@ -85,7 +85,7 @@ export class ProfileManager {
    */
   async createProfile(
     name: string,
-    copyRulesFromProfileId?: string
+    _copyRulesFromProfileId?: string
   ): Promise<{ success: boolean; profileId?: string; error?: string }> {
     if (!name.trim()) {
       return { success: false, error: "Profile name cannot be empty" };

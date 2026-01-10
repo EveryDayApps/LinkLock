@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 
 interface CreateProfileModalProps {
@@ -64,13 +65,14 @@ export function CreateProfileModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4">
+        <div className="mt-4 space-y-2">
+          <Label htmlFor="profile-name">Profile Name</Label>
           <Input
-            label="Profile Name"
+            id="profile-name"
             placeholder="Work, Focus, Personal, etc."
             value={name}
             onChange={(e) => setName(e.target.value)}
-            error={error}
+            className={error ? "border-destructive focus-visible:ring-destructive" : ""}
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -78,6 +80,9 @@ export function CreateProfileModal({
               }
             }}
           />
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
         </div>
 
         <DialogFooter>

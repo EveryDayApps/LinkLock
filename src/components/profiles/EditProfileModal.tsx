@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 interface EditProfileModalProps {
   open: boolean;
@@ -79,13 +80,14 @@ export function EditProfileModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4">
+        <div className="mt-4 space-y-2">
+          <Label htmlFor="edit-profile-name">Profile Name</Label>
           <Input
-            label="Profile Name"
+            id="edit-profile-name"
             placeholder="Work, Focus, Personal, etc."
             value={name}
             onChange={(e) => setName(e.target.value)}
-            error={error}
+            className={error ? "border-destructive focus-visible:ring-destructive" : ""}
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -93,6 +95,9 @@ export function EditProfileModal({
               }
             }}
           />
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
         </div>
 
         <DialogFooter>
