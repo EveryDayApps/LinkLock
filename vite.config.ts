@@ -13,14 +13,23 @@ export default defineConfig(({ mode }): UserConfig => {
         },
       }),
     ],
-    publicDir: isExtension ? false : 'public',
-    build: isExtension ? {
-      outDir: mode === 'chrome' ? 'dist_chrome' : 'dist_firefox',
-      rollupOptions: {
-        input: {
-          popup: resolve(__dirname, 'index.html'),
-        },
+
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
       },
-    } : undefined,
+    },
+
+    publicDir: isExtension ? false : 'public',
+    build: isExtension
+      ? {
+        outDir: mode === 'chrome' ? 'dist_chrome' : 'dist_firefox',
+        rollupOptions: {
+          input: {
+            popup: resolve(__dirname, 'index.html'),
+          },
+        },
+      }
+      : undefined,
   }
 })
