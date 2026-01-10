@@ -1,3 +1,4 @@
+import { Plus, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ProfileManager } from "../../lib/profileManager";
 import type { Profile } from "../../models/types";
@@ -117,9 +118,7 @@ export function ProfilesTab() {
           </p>
         </div>
         <Button onClick={() => setCreateModalOpen(true)}>
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus className="w-4 h-4 mr-2" />
           New Profile
         </Button>
       </div>
@@ -135,19 +134,23 @@ export function ProfilesTab() {
                 isActive
                   ? "border-primary bg-primary/5"
                   : "hover:border-accent-foreground/20"
-              }`}
+              }    `}
             >
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
+              <CardContent className="flex items-center justify-center">
+                <div className="flex items-center justify-between w-full p-2">
                   <div className="flex items-center gap-4">
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         isActive ? "bg-primary" : "bg-muted"
                       }`}
                     >
-                      <svg className={`w-5 h-5 ${isActive ? "text-primary-foreground" : "text-muted-foreground"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                      <User
+                        className={`w-5 h-5 ${
+                          isActive
+                            ? "text-primary-foreground"
+                            : "text-muted-foreground"
+                        }`}
+                      />
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -163,7 +166,6 @@ export function ProfilesTab() {
                       </p>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-2">
                     {!isActive && (
                       <Button
@@ -199,18 +201,17 @@ export function ProfilesTab() {
         {profiles.length === 0 && (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-              <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+              <User className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">No profiles yet</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              No profiles yet
+            </h3>
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Create your first profile to start managing different browsing contexts
+              Create your first profile to start managing different browsing
+              contexts
             </p>
             <Button onClick={() => setCreateModalOpen(true)}>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-4 h-4 mr-2" />
               Create Your First Profile
             </Button>
           </div>
