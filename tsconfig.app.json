@@ -10,7 +10,9 @@
     ],
     "module": "ESNext",
     "types": [
-      "vite/client"
+      "vite/client",
+      "chrome",
+      "firefox-webext-browser"
     ],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
