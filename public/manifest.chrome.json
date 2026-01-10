@@ -5,12 +5,14 @@
    "description": "LinkLock Extension",
    "options_page": "index.html",
    "action": {
-      "default_popup": "index.html",
       "default_icon": {
          "16": "vite.svg",
          "48": "vite.svg",
          "128": "vite.svg"
       }
+   },
+   "background": {
+      "service_worker": "background.js"
    },
    "icons": {
       "16": "vite.svg",
