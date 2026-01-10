@@ -26,3 +26,17 @@ try {
 
 copyFileSync(sourceManifest, targetManifest);
 console.log(`✓ Copied ${sourceManifest} to ${targetManifest}`);
+
+// Copy all files from commons folder
+const commonsDir = "public/commons";
+try {
+  const commonFiles = readdirSync(commonsDir);
+  commonFiles.forEach((file) => {
+    const sourcePath = `${commonsDir}/${file}`;
+    const targetPath = `${targetDir}/${file}`;
+    copyFileSync(sourcePath, targetPath);
+    console.log(`✓ Copied ${sourcePath} to ${targetPath}`);
+  });
+} catch (err) {
+  console.log(`ℹ No commons folder found at ${commonsDir}`);
+}
