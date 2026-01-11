@@ -11,12 +11,12 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import type { LinkRule, Profile } from "@/models/interfaces";
 import { useProfileManager, useRuleManager } from "@/services/core";
-import type { LinkRule, Profile } from "../../models/interfaces";
-import { AddRuleModal } from "../rules/AddRuleModal";
-import { EditRuleModal } from "../rules/EditRuleModal";
-import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
+import { AddRuleModal } from "../components/rules/AddRuleModal";
+import { EditRuleModal } from "../components/rules/EditRuleModal";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -24,15 +24,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
+} from "../components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Switch } from "../ui/switch";
+} from "../components/ui/dropdown-menu";
+import { Switch } from "../components/ui/switch";
 
 export function RulesScreen() {
   const [rules, setRules] = useState<LinkRule[]>([]);

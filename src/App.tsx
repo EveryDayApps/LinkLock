@@ -1,10 +1,10 @@
 import { FileText, Info, Lock, Settings, Upload, User } from "lucide-react";
 import { useState } from "react";
-import { AboutScreen } from "./components/screens/AboutScreen";
-import { ImportExportScreen } from "./components/screens/ImportExportScreen";
-import { ProfilesScreen } from "./components/screens/ProfilesScreen";
-import { RulesScreen } from "./components/screens/RulesScreen";
-import { SettingsScreen } from "./components/screens/SettingsScreen";
+import { AboutScreen } from "./screens/AboutScreen";
+import { ImportExportScreen } from "./screens/ImportExportScreen";
+import { ProfilesScreen } from "./screens/ProfilesScreen";
+import { RulesScreen } from "./screens/RulesScreen";
+import { SettingsScreen } from "./screens/SettingsScreen";
 
 export type ScreenType =
   | "profiles"

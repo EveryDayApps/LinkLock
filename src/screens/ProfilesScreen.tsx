@@ -1,4 +1,4 @@
-import { ProfilesTab } from "../profiles/ProfilesTab";
+import { ProfilesTab } from "../components/profiles/ProfilesTab";
 
 export function ProfilesScreen() {
   return (
