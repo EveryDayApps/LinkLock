@@ -8,7 +8,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { AuthManager } from "../../lib/authManager";
+import { useAuthManager } from "../../services";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -21,7 +21,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 
 export function SettingsScreen() {
-  const [authManager] = useState(() => new AuthManager());
+  const authManager = useAuthManager();
   const [hasMasterPassword, setHasMasterPassword] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);

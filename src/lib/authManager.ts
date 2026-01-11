@@ -11,9 +11,12 @@ export class AuthManager {
   private passwordService: PasswordService;
   private encryptionService: EncryptionService;
 
-  constructor() {
-    this.passwordService = new PasswordService();
-    this.encryptionService = new EncryptionService();
+  constructor(
+    passwordService?: PasswordService,
+    encryptionService?: EncryptionService
+  ) {
+    this.passwordService = passwordService || new PasswordService();
+    this.encryptionService = encryptionService || new EncryptionService();
   }
 
   /**

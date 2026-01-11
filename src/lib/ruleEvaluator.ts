@@ -12,7 +12,11 @@ export type EvaluationResult =
   | { action: "require_unlock"; rule: LinkRule; domain: string };
 
 export class RuleEvaluator {
-  constructor(private sessionManager?: UnlockSessionManager) {}
+  private sessionManager?: UnlockSessionManager;
+
+  constructor(sessionManager?: UnlockSessionManager) {
+    this.sessionManager = sessionManager;
+  }
 
   /**
    * Set session manager after construction (for circular dependency)

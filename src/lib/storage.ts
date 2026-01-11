@@ -9,8 +9,8 @@ export class StorageService {
   private encryptionService: EncryptionService;
   private storageKey = "linklock_data_v1";
 
-  constructor() {
-    this.encryptionService = new EncryptionService();
+  constructor(encryptionService?: EncryptionService) {
+    this.encryptionService = encryptionService || new EncryptionService();
   }
 
   /**

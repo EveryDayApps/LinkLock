@@ -10,8 +10,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ProfileManager } from "../../lib/profileManager";
-import { RuleManager } from "../../lib/ruleManager";
+import { useProfileManager, useRuleManager } from "../../services";
 import type { LinkRule, Profile } from "../../models/interfaces";
 import { AddRuleModal } from "../rules/AddRuleModal";
 import { EditRuleModal } from "../rules/EditRuleModal";
@@ -38,8 +37,8 @@ export function RulesScreen() {
   const [rules, setRules] = useState<LinkRule[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
-  const [ruleManager] = useState(() => new RuleManager());
-  const [profileManager] = useState(() => new ProfileManager());
+  const ruleManager = useRuleManager();
+  const profileManager = useProfileManager();
   const [isInitialized, setIsInitialized] = useState(false);
 
   const [addModalOpen, setAddModalOpen] = useState(false);

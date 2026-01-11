@@ -31,7 +31,7 @@ interface MasterPasswordData {
 }
 
 // Define the database schema
-class LinkLockDatabase extends Dexie {
+export class LinkLockDatabase extends Dexie {
   profiles!: EntityTable<EncryptedProfile, "id">;
   rules!: EntityTable<EncryptedRule, "id">;
   masterPassword!: EntityTable<MasterPasswordData, "id">;

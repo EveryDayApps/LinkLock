@@ -1,6 +1,6 @@
 import { Plus, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ProfileManager } from "../../lib/profileManager";
+import { useProfileManager } from "../../services";
 import type { Profile } from "../../models/interfaces";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -18,7 +18,7 @@ import { EditProfileModal } from "./EditProfileModal";
 export function ProfilesTab() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
-  const [profileManager] = useState(() => new ProfileManager());
+  const profileManager = useProfileManager();
   const [isInitialized, setIsInitialized] = useState(false);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);

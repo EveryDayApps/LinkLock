@@ -7,6 +7,7 @@ import { UnlockSessionManager } from "../lib/unlockSessionManager";
 import { ProfileManager } from "../lib/profileManager";
 import { RuleManager } from "../lib/ruleManager";
 import { setupMessageHandler } from "./messageHandler";
+import { getServices } from "../services/factory";
 
 export class BrowserApi extends BaseBrowserApi {
   private _browserApi: BaseBrowserApi | undefined;
@@ -32,14 +33,13 @@ export class BrowserApi extends BaseBrowserApi {
    * Initialize all services
    */
   private initializeServices(): void {
-    // Create services
-    this._sessionManager = new UnlockSessionManager();
-    this._ruleEvaluator = new RuleEvaluator(this._sessionManager);
-    this._profileManager = new ProfileManager();
-    this._ruleManager = new RuleManager();
+    // Get services from the factory (singleton)
+    const services = getServices();
 
-    // Set session manager reference in rule evaluator
-    this._ruleEvaluator.setSessionManager(this._sessionManager);
+    this._sessionManager = services.unlockSessionManager;
+    this._ruleEvaluator = services.ruleEvaluator;
+    this._profileManager = services.profileManager;
+    this._ruleManager = services.ruleManager;
 
     // Inject services into the browser API implementation
     this.api.setServices(
