@@ -1,26 +1,50 @@
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
-import { defineConfig, type UserConfig } from 'vite'
+import react from "@vitejs/plugin-react";
+import { resolve } from "path";
+import { defineConfig, type UserConfig } from "vite";
 
 export default defineConfig(({ mode }): UserConfig => {
-  const isExtension = mode === 'chrome' || mode === 'firefox'
+  const isExtension = mode === "chrome" || mode === "firefox";
 
   return {
     plugins: [
       react({
         babel: {
-          plugins: [['babel-plugin-react-compiler']],
+          plugins: [["babel-plugin-react-compiler"]],
         },
       }),
     ],
-    publicDir: isExtension ? false : 'public',
-    build: isExtension ? {
-      outDir: mode === 'chrome' ? 'dist_chrome' : 'dist_firefox',
-      rollupOptions: {
-        input: {
-          popup: resolve(__dirname, 'index.html'),
-        },
+
+    resolve: {
+      alias: {
+        "@": resolve(__dirname, "src"),
       },
-    } : undefined,
-  }
-})
+    },
+
+    publicDir: isExtension ? false : "public",
+    build: isExtension
+      ? {
+          outDir: mode === "chrome" ? "dist_chrome" : "dist_firefox",
+          rollupOptions: {
+            input: {
+              popup: resolve(__dirname, "index.html"),
+              background: resolve(__dirname, "src/background/BrowserApi.ts"),
+            },
+
+            output: {
+              entryFileNames: (chunkInfo) => {
+                // Background script should be at root
+                if (chunkInfo.name === "background") {
+                  return "background.js";
+                }
+                return "assets/[name]-[hash].js";
+              },
+              // Disable code splitting - inline everything
+              inlineDynamicImports: false,
+            },
+            // Prevent sharing modules between entries
+            preserveEntrySignatures: "strict",
+          },
+        }
+      : undefined,
+  };
+});

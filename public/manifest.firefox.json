@@ -5,19 +5,31 @@
    "description": "LinkLock Extension",
    "options_page": "index.html",
    "browser_action": {
-      "default_popup": "index.html",
       "default_icon": {
          "16": "vite.svg",
          "48": "vite.svg",
          "128": "vite.svg"
       }
    },
+   "background": {
+      "scripts": [
+         "background.js"
+      ],
+      "type": "module"
+   },
    "icons": {
       "16": "vite.svg",
       "48": "vite.svg",
       "128": "vite.svg"
    },
-   "permissions": [],
+   "permissions": [
+      "webNavigation",
+      "webRequest",
+      "webRequestBlocking",
+      "storage",
+      "tabs",
+      "<all_urls>"
+   ],
    "browser_specific_settings": {
       "gecko": {
          "id": "linklock@example.com",

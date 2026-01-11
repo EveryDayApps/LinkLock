@@ -10,7 +10,9 @@
     ],
     "module": "ESNext",
     "types": [
-      "vite/client"
+      "vite/client",
+      "chrome",
+      "firefox-webext-browser"
     ],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -24,9 +26,15 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
   "include": [
-    "src"
+    "src",
+    "src/App.tsx"
   ]
 }
