@@ -1,28 +1,38 @@
 // ============================================
 // Profile Manager
-// Handles all profile-related operations
+// Handles all profile-related operations using Dexie.js with encryption
 // ============================================
 import type { Profile, ProfileWithRuleCount } from "../models/interfaces";
-import { StorageService } from "./storage";
+import { db } from "./db";
 
 export class ProfileManager {
-  private profiles: Map<string, Profile> = new Map();
   private activeProfileId: string | null = null;
-  private storageService: StorageService;
-  private masterPasswordHash: string = "";
 
-  constructor() {
-    this.storageService = new StorageService();
-  }
+  constructor() {}
 
   /**
-   * Initialize with master password hash
+   * Initialize - load active profile and set master password
    */
   async initialize(masterPasswordHash: string): Promise<void> {
-    this.masterPasswordHash = masterPasswordHash;
-    await this.loadFromStorage();
+    db.setMasterPassword(masterPasswordHash);
 
-    if (this.profiles.size === 0) {
+    try {
+      const encryptedProfiles = await db.profiles.toArray();
+
+      if (encryptedProfiles.length === 0) {
+        await this.createDefaultProfile();
+      } else {
+        // Decrypt profiles to find active one
+        const profiles = await Promise.all(
+          encryptedProfiles.map((ep) => db.decryptProfile(ep))
+        );
+        const activeProfile = profiles.find((p) => p.isActive);
+        this.activeProfileId = activeProfile?.id || null;
+      }
+    } catch (error) {
+      // If decryption fails, it means old unencrypted data exists
+      console.error("Failed to decrypt profiles, clearing database:", error);
+      await db.clearAll();
       await this.createDefaultProfile();
     }
   }
@@ -39,35 +49,41 @@ export class ProfileManager {
       updatedAt: Date.now(),
     };
 
-    this.profiles.set(profile.id, profile);
+    const encrypted = await db.encryptProfile(profile);
+    await db.profiles.add(encrypted);
     this.activeProfileId = profile.id;
-    await this.saveToStorage();
   }
 
   /**
    * Get active profile
    */
-  getActiveProfile(): Profile | null {
+  async getActiveProfile(): Promise<Profile | null> {
     if (!this.activeProfileId) {
       return null;
     }
-    return this.profiles.get(this.activeProfileId) || null;
+    const encrypted = await db.profiles.get(this.activeProfileId);
+    if (!encrypted) return null;
+    return await db.decryptProfile(encrypted);
   }
 
   /**
    * Get all profiles
    */
-  getAllProfiles(): Profile[] {
-    return Array.from(this.profiles.values());
+  async getAllProfiles(): Promise<Profile[]> {
+    const encryptedProfiles = await db.profiles.toArray();
+    return await Promise.all(
+      encryptedProfiles.map((ep) => db.decryptProfile(ep))
+    );
   }
 
   /**
    * Get all profiles with rule counts
    */
-  getAllProfilesWithCounts(
+  async getAllProfilesWithCounts(
     ruleCountMap: Map<string, number>
-  ): ProfileWithRuleCount[] {
-    return this.getAllProfiles().map((profile) => ({
+  ): Promise<ProfileWithRuleCount[]> {
+    const profiles = await this.getAllProfiles();
+    return profiles.map((profile) => ({
       ...profile,
       ruleCount: ruleCountMap.get(profile.id) || 0,
     }));
@@ -76,8 +92,10 @@ export class ProfileManager {
   /**
    * Get profile by ID
    */
-  getProfile(profileId: string): Profile | null {
-    return this.profiles.get(profileId) || null;
+  async getProfile(profileId: string): Promise<Profile | null> {
+    const encrypted = await db.profiles.get(profileId);
+    if (!encrypted) return null;
+    return await db.decryptProfile(encrypted);
   }
 
   /**
@@ -91,7 +109,9 @@ export class ProfileManager {
       return { success: false, error: "Profile name cannot be empty" };
     }
 
-    const existingProfile = Array.from(this.profiles.values()).find(
+    // Decrypt all profiles to check for duplicates
+    const allProfiles = await this.getAllProfiles();
+    const existingProfile = allProfiles.find(
       (p) => p.name.toLowerCase() === name.toLowerCase()
     );
 
@@ -108,8 +128,8 @@ export class ProfileManager {
       updatedAt: Date.now(),
     };
 
-    this.profiles.set(profileId, profile);
-    await this.saveToStorage();
+    const encrypted = await db.encryptProfile(profile);
+    await db.profiles.add(encrypted);
 
     return { success: true, profileId };
   }
@@ -125,7 +145,9 @@ export class ProfileManager {
       return { success: false, error: "Profile name cannot be empty" };
     }
 
-    const existingProfile = Array.from(this.profiles.values()).find(
+    // Decrypt all profiles to check for duplicates
+    const allProfiles = await this.getAllProfiles();
+    const existingProfile = allProfiles.find(
       (p) => p.id !== profileId && p.name.toLowerCase() === name.toLowerCase()
     );
 
@@ -133,15 +155,19 @@ export class ProfileManager {
       return { success: false, error: "Profile name already exists" };
     }
 
-    const profile = this.profiles.get(profileId);
+    const profile = await this.getProfile(profileId);
     if (!profile) {
       return { success: false, error: "Profile not found" };
     }
 
+    // Update profile data
     profile.name = name;
     profile.updatedAt = Date.now();
 
-    await this.saveToStorage();
+    // Re-encrypt and save
+    const encrypted = await db.encryptProfile(profile);
+    await db.profiles.put(encrypted);
+
     return { success: true };
   }
 
@@ -151,22 +177,27 @@ export class ProfileManager {
   async switchProfile(
     profileId: string
   ): Promise<{ success: boolean; error?: string }> {
-    const profile = this.profiles.get(profileId);
+    const profile = await this.getProfile(profileId);
     if (!profile) {
       return { success: false, error: "Profile not found" };
     }
 
+    // Deactivate current profile
     if (this.activeProfileId) {
-      const currentProfile = this.profiles.get(this.activeProfileId);
+      const currentProfile = await this.getProfile(this.activeProfileId);
       if (currentProfile) {
         currentProfile.isActive = false;
+        const encrypted = await db.encryptProfile(currentProfile);
+        await db.profiles.put(encrypted);
       }
     }
 
+    // Activate new profile
     profile.isActive = true;
+    const encrypted = await db.encryptProfile(profile);
+    await db.profiles.put(encrypted);
     this.activeProfileId = profileId;
 
-    await this.saveToStorage();
     return { success: true };
   }
 
@@ -183,60 +214,18 @@ export class ProfileManager {
       };
     }
 
-    if (this.profiles.size <= 1) {
+    const count = await db.profiles.count();
+    if (count <= 1) {
       return { success: false, error: "Cannot delete the only profile" };
     }
 
-    const deleted = this.profiles.delete(profileId);
-    if (!deleted) {
+    const profile = await this.getProfile(profileId);
+    if (!profile) {
       return { success: false, error: "Profile not found" };
     }
 
-    await this.saveToStorage();
+    await db.profiles.delete(profileId);
+
     return { success: true };
-  }
-
-  /**
-   * Load profiles from storage
-   */
-  private async loadFromStorage(): Promise<void> {
-    try {
-      const data = await this.storageService.loadStorageData(
-        this.masterPasswordHash
-      );
-
-      if (data && data.profiles) {
-        this.profiles.clear();
-        data.profiles.forEach((profile) => {
-          this.profiles.set(profile.id, profile);
-          if (profile.isActive) {
-            this.activeProfileId = profile.id;
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Failed to load profiles:", error);
-    }
-  }
-
-  /**
-   * Save profiles to storage
-   */
-  private async saveToStorage(): Promise<void> {
-    try {
-      const existingData = await this.storageService.loadStorageData(
-        this.masterPasswordHash
-      );
-
-      const data = {
-        profiles: Array.from(this.profiles.values()),
-        rules: existingData?.rules || [],
-        securityConfig: existingData?.securityConfig,
-      };
-
-      await this.storageService.saveStorageData(data, this.masterPasswordHash);
-    } catch (error) {
-      console.error("Failed to save profiles:", error);
-    }
   }
 }

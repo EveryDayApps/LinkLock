@@ -61,10 +61,10 @@ export function RulesScreen() {
     setIsInitialized(true);
   };
 
-  const loadData = () => {
+  const loadData = async () => {
     const allRules = ruleManager.getAllRules();
-    const allProfiles = profileManager.getAllProfiles();
-    const activeProfile = profileManager.getActiveProfile();
+    const allProfiles = await profileManager.getAllProfiles();
+    const activeProfile = await profileManager.getActiveProfile();
 
     setRules(allRules);
     setProfiles(allProfiles);
@@ -83,7 +83,9 @@ export function RulesScreen() {
 
   const handleUpdateRule = async (
     ruleId: string,
-    updates: Partial<Omit<LinkRule, "id" | "createdAt" | "updatedAt" | "profileIds">>
+    updates: Partial<
+      Omit<LinkRule, "id" | "createdAt" | "updatedAt" | "profileIds">
+    >
   ): Promise<{ success: boolean; error?: string }> => {
     const result = await ruleManager.updateRule(ruleId, updates);
     if (result.success) {

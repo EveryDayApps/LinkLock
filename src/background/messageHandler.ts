@@ -2,10 +2,10 @@
 // Message Handler for Background Service
 // Handles messages from UI (popup, options, unlock page)
 // ============================================
-import type { RuleEvaluator } from "../lib/ruleEvaluator";
-import type { UnlockSessionManager } from "../lib/unlockSessionManager";
 import type { ProfileManager } from "../lib/profileManager";
+import type { RuleEvaluator } from "../lib/ruleEvaluator";
 import type { RuleManager } from "../lib/ruleManager";
+import type { UnlockSessionManager } from "../lib/unlockSessionManager";
 import type { UnlockDuration } from "../models/enums";
 
 export interface MessageHandler {
@@ -57,7 +57,11 @@ async function handleMessage(
     // ============================================
     case "UNLOCK_SITE": {
       const { domain, duration, profileId } = message.payload;
-      await sessionManager.unlock(domain, duration as UnlockDuration, profileId);
+      await sessionManager.unlock(
+        domain,
+        duration as UnlockDuration,
+        profileId
+      );
       return { success: true };
     }
 
@@ -104,12 +108,12 @@ async function handleMessage(
     // Profile Operations
     // ============================================
     case "GET_ACTIVE_PROFILE": {
-      const profile = profileManager.getActiveProfile();
+      const profile = await profileManager.getActiveProfile();
       return { success: true, profile };
     }
 
     case "GET_ALL_PROFILES": {
-      const profiles = profileManager.getAllProfiles();
+      const profiles = await profileManager.getAllProfiles();
       return { success: true, profiles };
     }
 

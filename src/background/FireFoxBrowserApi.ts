@@ -95,7 +95,7 @@ export class FireFoxBrowserApi extends BaseBrowserApi {
 
     try {
       // Get active profile
-      const activeProfile = this.profileManager.getActiveProfile();
+      const activeProfile = await this.profileManager.getActiveProfile();
       if (!activeProfile) {
         console.log("No active profile, allowing navigation");
         return {}; // No active profile, allow navigation
@@ -127,7 +127,9 @@ export class FireFoxBrowserApi extends BaseBrowserApi {
 
         case "require_unlock":
           const unlockUrl = this.getUnlockPageUrl(url, result.rule.id);
-          console.log(`🔒 Unlock required for ${url}, redirecting to unlock page`);
+          console.log(
+            `🔒 Unlock required for ${url}, redirecting to unlock page`
+          );
           return { redirectUrl: unlockUrl };
 
         case "allow":
@@ -139,8 +141,6 @@ export class FireFoxBrowserApi extends BaseBrowserApi {
       console.error("Error handling navigation:", error);
       return {};
     }
-
-    return {};
   }
 
   async blockNavigation(tabId: number): Promise<void> {

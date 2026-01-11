@@ -39,11 +39,11 @@ export function ProfilesTab() {
     setIsInitialized(true);
   };
 
-  const loadProfiles = () => {
-    const allProfiles = profileManager.getAllProfiles();
+  const loadProfiles = async () => {
+    const allProfiles = await profileManager.getAllProfiles();
     setProfiles(allProfiles);
 
-    const activeProfile = profileManager.getActiveProfile();
+    const activeProfile = await profileManager.getActiveProfile();
     setActiveProfileId(activeProfile?.id || null);
   };
 
