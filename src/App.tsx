@@ -15,7 +15,7 @@ export type ScreenType =
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>("rules");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen] = useState(true);
 
   const handleNavigate = (screen: ScreenType) => {
     setCurrentScreen(screen);

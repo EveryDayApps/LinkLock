@@ -1,4 +1,4 @@
-import type { RuleAction, UnlockDuration } from "./enums";
+import type { LockMode, RuleAction } from "./enums";
 
 export interface Profile {
   id: string;
@@ -17,17 +17,19 @@ export interface LinkRule {
   urlPattern: string;
   action: RuleAction;
   lockOptions?: {
-    unlockDuration: UnlockDuration;
-    useCustomPassword: boolean;
+    lockMode: LockMode;
+    timedDuration?: number; // in minutes
+    customPassword?: string;
     customPasswordHash?: string;
   };
   redirectOptions?: {
-    targetUrl: string;
+    redirectUrl: string;
   };
-  profileId: string;
+  profileIds: string[]; // Multiple profiles can use same rule
+  applyToAllSubdomains: boolean;
+  enabled: boolean;
   createdAt: number;
   updatedAt: number;
-  enabled: boolean;
 }
 
 export interface EncryptedData {

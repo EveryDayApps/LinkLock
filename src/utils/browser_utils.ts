@@ -1,4 +1,4 @@
-import type { BrowserType } from "../models/interfaces";
+import type { BrowserType } from "../models/enums";
 
 export function detectBrowser(): BrowserType {
   if (typeof chrome !== "undefined" && typeof browser === "undefined") {
