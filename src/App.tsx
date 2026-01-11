@@ -1,10 +1,10 @@
+import { FileText, Info, Lock, Settings, Upload, User } from "lucide-react";
 import { useState } from "react";
 import { AboutScreen } from "./components/screens/AboutScreen";
 import { ImportExportScreen } from "./components/screens/ImportExportScreen";
 import { ProfilesScreen } from "./components/screens/ProfilesScreen";
 import { RulesScreen } from "./components/screens/RulesScreen";
 import { SettingsScreen } from "./components/screens/SettingsScreen";
-import { Lock, FileText, User, Upload, Settings, Info, Menu } from "lucide-react";
 
 export type ScreenType =
   | "profiles"
@@ -129,16 +129,6 @@ function App() {
 
         {/* Main Content */}
         <div className="flex-1 overflow-auto bg-background">
-          {/* Top Bar with Drawer Toggle */}
-          <div className="sticky top-0 z-10 bg-card border-b border-border px-6 py-4">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 rounded-md hover:bg-accent transition"
-              aria-label="Toggle sidebar"
-            >
-              <Menu className="w-6 h-6 text-foreground" />
-            </button>
-          </div>
           {renderScreen()}
         </div>
       </div>

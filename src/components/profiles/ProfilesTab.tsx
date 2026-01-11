@@ -1,7 +1,7 @@
 import { Plus, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ProfileManager } from "../../lib/profileManager";
-import type { Profile } from "../../models/types";
+import type { Profile } from "../../models/interfaces";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import {

@@ -2,7 +2,7 @@
 // Storage Service
 // Handles encrypted local storage for extension data
 // ============================================
-import type { StorageData } from "../models/types";
+import type { StorageData } from "../models/interfaces";
 import { EncryptionService } from "./encryption";
 
 export class StorageService {

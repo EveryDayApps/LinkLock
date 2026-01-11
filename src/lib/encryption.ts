@@ -7,7 +7,7 @@
 // Encryption Service
 // Handles AES-GCM encryption/decryption for secure local storage
 // ============================================
-import type { EncryptedData } from "../models/types";
+import type { EncryptedData } from "../models/interfaces";
 
 export class EncryptionService {
   /**

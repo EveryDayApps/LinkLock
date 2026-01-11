@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Profile } from "../../models/types";
+import type { Profile } from "../../models/interfaces";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -87,7 +87,9 @@ export function EditProfileModal({
             placeholder="Work, Focus, Personal, etc."
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className={error ? "border-destructive focus-visible:ring-destructive" : ""}
+            className={
+              error ? "border-destructive focus-visible:ring-destructive" : ""
+            }
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -95,9 +97,7 @@ export function EditProfileModal({
               }
             }}
           />
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>

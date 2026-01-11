@@ -2,7 +2,7 @@
 // Profile Manager
 // Handles all profile-related operations
 // ============================================
-import type { Profile, ProfileWithRuleCount } from "../models/types";
+import type { Profile, ProfileWithRuleCount } from "../models/interfaces";
 import { StorageService } from "./storage";
 
 export class ProfileManager {
