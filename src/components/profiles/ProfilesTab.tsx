@@ -130,7 +130,7 @@ export function ProfilesTab() {
           return (
             <Card key={profile.id}>
               <CardContent className="flex items-center justify-center">
-                <div className="flex items-center justify-between w-full p-2">
+                <div className="flex items-center justify-between w-full ">
                   <div className="flex items-center gap-4">
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center ${

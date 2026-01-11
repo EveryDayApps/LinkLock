@@ -20,10 +20,21 @@ interface EncryptedRule {
   profileIds: string[]; // Keep for indexing
 }
 
+interface MasterPasswordData {
+  id: string; // Always "master" for singleton
+  userId: string;
+  encryptedPasswordHash: string;
+  salt: string;
+  iv: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // Define the database schema
 class LinkLockDatabase extends Dexie {
   profiles!: EntityTable<EncryptedProfile, "id">;
   rules!: EntityTable<EncryptedRule, "id">;
+  masterPassword!: EntityTable<MasterPasswordData, "id">;
 
   private encryptionService: EncryptionService;
   private masterPasswordHash: string | null = null;
@@ -35,6 +46,13 @@ class LinkLockDatabase extends Dexie {
     this.version(2).stores({
       profiles: "id",
       rules: "id, *profileIds",
+    });
+
+    // Version 3: Added master password storage
+    this.version(3).stores({
+      profiles: "id",
+      rules: "id, *profileIds",
+      masterPassword: "id",
     });
 
     this.encryptionService = new EncryptionService();
@@ -53,6 +71,7 @@ class LinkLockDatabase extends Dexie {
   async clearAll(): Promise<void> {
     await this.profiles.clear();
     await this.rules.clear();
+    await this.masterPassword.clear();
   }
 
   /**
