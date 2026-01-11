@@ -4,8 +4,8 @@
 // ============================================
 
 import { createContext, useContext, type ReactNode } from "react";
-import type { Services } from "./types";
 import { getServices } from "./factory";
+import type { Services } from "./types";
 
 /**
  * Context for accessing services throughout the app

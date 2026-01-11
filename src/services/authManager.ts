@@ -49,13 +49,12 @@ export class AuthManager {
       const userId = this.passwordService.generateUserId();
 
       // Hash the password with a unique salt
-      const { hash: passwordHash, salt } = await this.passwordService.hashPassword(password);
+      const { hash: passwordHash, salt } =
+        await this.passwordService.hashPassword(password);
 
       // Encrypt the password hash using itself as the key (for verification)
-      const { encrypted: encryptedPasswordHash, iv } = await this.encryptionService.encrypt(
-        passwordHash,
-        passwordHash
-      );
+      const { encrypted: encryptedPasswordHash, iv } =
+        await this.encryptionService.encrypt(passwordHash, passwordHash);
 
       // Store in database
       const masterData = {
@@ -81,7 +80,10 @@ export class AuthManager {
       console.error("Failed to setup master password:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to setup master password",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to setup master password",
       };
     }
   }
@@ -144,7 +146,8 @@ export class AuthManager {
       console.error("Failed to verify master password:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to verify password",
+        error:
+          error instanceof Error ? error.message : "Failed to verify password",
       };
     }
   }
@@ -207,7 +210,8 @@ export class AuthManager {
       console.error("Failed to change master password:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to change password",
+        error:
+          error instanceof Error ? error.message : "Failed to change password",
       };
     }
   }

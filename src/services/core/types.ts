@@ -3,15 +3,15 @@
 // Defines all service interfaces and dependencies
 // ============================================
 
-import type { AuthManager } from "../lib/authManager";
-import type { PasswordService } from "../lib/passwordService";
-import type { EncryptionService } from "../lib/encryption";
-import type { ProfileManager } from "../lib/profileManager";
-import type { RuleManager } from "../lib/ruleManager";
-import type { RuleEvaluator } from "../lib/ruleEvaluator";
-import type { UnlockSessionManager } from "../lib/unlockSessionManager";
-import type { StorageService } from "../lib/storage";
-import type { LinkLockDatabase } from "../lib/db";
+import type { AuthManager } from "../authManager";
+import type { LinkLockDatabase } from "../db";
+import type { EncryptionService } from "../encryption";
+import type { PasswordService } from "../passwordService";
+import type { ProfileManager } from "../profileManager";
+import type { RuleEvaluator } from "../ruleEvaluator";
+import type { RuleManager } from "../ruleManager";
+import type { StorageService } from "../storage";
+import type { UnlockSessionManager } from "../unlockSessionManager";
 
 /**
  * All services available in the application

@@ -2,11 +2,11 @@
 // Message Handler for Background Service
 // Handles messages from UI (popup, options, unlock page)
 // ============================================
-import type { ProfileManager } from "../lib/profileManager";
-import type { RuleEvaluator } from "../lib/ruleEvaluator";
-import type { RuleManager } from "../lib/ruleManager";
-import type { UnlockSessionManager } from "../lib/unlockSessionManager";
 import type { UnlockDuration } from "../models/enums";
+import type { ProfileManager } from "../services/profileManager";
+import type { RuleEvaluator } from "../services/ruleEvaluator";
+import type { RuleManager } from "../services/ruleManager";
+import type { UnlockSessionManager } from "../services/unlockSessionManager";
 
 export interface MessageHandler {
   ruleEvaluator: RuleEvaluator;

@@ -1,6 +1,6 @@
+import { useProfileManager } from "@/services/core";
 import { Plus, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useProfileManager } from "../../services";
 import type { Profile } from "../../models/interfaces";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";

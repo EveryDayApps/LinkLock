@@ -1,18 +1,31 @@
 import {
+  FileText,
+  Info,
+  Lock,
+  Settings as SettingsIcon,
+  Upload,
+  User,
+} from "lucide-react";
+import type { ScreenType } from "../../App";
+import {
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "../ui/sheet";
-import type { ScreenType } from "../../App";
-import { Lock, FileText, User, Upload, Settings as SettingsIcon, Info } from "lucide-react";
+} from "./sheet";
 
 interface AppDrawerContentProps {
   onNavigate: (screen: ScreenType) => void;
 }
 
-export default function AppDrawerContent({ onNavigate }: AppDrawerContentProps) {
-  const menuItems: { label: string; screen: ScreenType; Icon: React.ComponentType<{ className?: string }> }[] = [
+export default function AppDrawerContent({
+  onNavigate,
+}: AppDrawerContentProps) {
+  const menuItems: {
+    label: string;
+    screen: ScreenType;
+    Icon: React.ComponentType<{ className?: string }>;
+  }[] = [
     {
       label: "Rules",
       screen: "rules",

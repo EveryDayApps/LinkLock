@@ -10,7 +10,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useProfileManager, useRuleManager } from "../../services";
+
+import { useProfileManager, useRuleManager } from "@/services/core";
 import type { LinkRule, Profile } from "../../models/interfaces";
 import { AddRuleModal } from "../rules/AddRuleModal";
 import { EditRuleModal } from "../rules/EditRuleModal";

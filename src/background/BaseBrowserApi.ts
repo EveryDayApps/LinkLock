@@ -1,7 +1,7 @@
-import type { RuleEvaluator } from "../lib/ruleEvaluator";
-import type { UnlockSessionManager } from "../lib/unlockSessionManager";
-import type { ProfileManager } from "../lib/profileManager";
-import type { RuleManager } from "../lib/ruleManager";
+import type { ProfileManager } from "../services/profileManager";
+import type { RuleEvaluator } from "../services/ruleEvaluator";
+import type { RuleManager } from "../services/ruleManager";
+import type { UnlockSessionManager } from "../services/unlockSessionManager";
 
 export abstract class BaseBrowserApi {
   protected ruleEvaluator?: RuleEvaluator;

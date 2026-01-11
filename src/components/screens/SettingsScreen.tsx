@@ -1,3 +1,4 @@
+import { useAuthManager } from "@/services/core";
 import {
   Check,
   Eye,
@@ -8,7 +9,6 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAuthManager } from "../../services";
 import { Button } from "../ui/button";
 import {
   Card,

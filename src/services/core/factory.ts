@@ -3,16 +3,16 @@
 // Creates and wires all service dependencies
 // ============================================
 
-import { AuthManager } from "../lib/authManager";
-import { PasswordService } from "../lib/passwordService";
-import { EncryptionService } from "../lib/encryption";
-import { ProfileManager } from "../lib/profileManager";
-import { RuleManager } from "../lib/ruleManager";
-import { RuleEvaluator } from "../lib/ruleEvaluator";
-import { UnlockSessionManager } from "../lib/unlockSessionManager";
-import { StorageService } from "../lib/storage";
-import { db } from "../lib/db";
-import type { Services, ServiceOptions } from "./types";
+import { AuthManager } from "../authManager";
+import { db } from "../db";
+import { EncryptionService } from "../encryption";
+import { PasswordService } from "../passwordService";
+import { ProfileManager } from "../profileManager";
+import { RuleEvaluator } from "../ruleEvaluator";
+import { RuleManager } from "../ruleManager";
+import { StorageService } from "../storage";
+import { UnlockSessionManager } from "../unlockSessionManager";
+import type { ServiceOptions, Services } from "./types";
 
 /**
  * Create all services with proper dependency injection

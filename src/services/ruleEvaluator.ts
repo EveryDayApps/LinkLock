@@ -2,8 +2,8 @@
 // Rule Evaluator Service
 // Matches URLs against rules and determines actions
 // ============================================
+import type { UnlockSessionManager } from "../lib/unlockSessionManager";
 import type { LinkRule } from "../models/interfaces";
-import type { UnlockSessionManager } from "./unlockSessionManager";
 
 export type EvaluationResult =
   | { action: "allow" }

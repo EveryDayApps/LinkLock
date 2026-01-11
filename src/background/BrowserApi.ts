@@ -1,13 +1,13 @@
+import { getServices } from "../services/factory";
+import { ProfileManager } from "../services/profileManager";
+import { RuleEvaluator } from "../services/ruleEvaluator";
+import { RuleManager } from "../services/ruleManager";
+import { UnlockSessionManager } from "../services/unlockSessionManager";
 import { detectBrowser } from "../utils/browser_utils";
 import { BaseBrowserApi } from "./BaseBrowserApi";
 import { ChromeBrowserApi } from "./ChromeBrowserApi";
 import { FireFoxBrowserApi } from "./FireFoxBrowserApi";
-import { RuleEvaluator } from "../lib/ruleEvaluator";
-import { UnlockSessionManager } from "../lib/unlockSessionManager";
-import { ProfileManager } from "../lib/profileManager";
-import { RuleManager } from "../lib/ruleManager";
 import { setupMessageHandler } from "./messageHandler";
-import { getServices } from "../services/factory";
 
 export class BrowserApi extends BaseBrowserApi {
   private _browserApi: BaseBrowserApi | undefined;
