@@ -27,7 +27,7 @@ export default defineConfig(({ mode }): UserConfig => {
           rollupOptions: {
             input: {
               popup: resolve(__dirname, "index.html"),
-              background: "src/background/BrowserApi.ts",
+              background: resolve(__dirname, "src/background/BrowserApi.ts"),
             },
 
             output: {
@@ -38,7 +38,11 @@ export default defineConfig(({ mode }): UserConfig => {
                 }
                 return "assets/[name]-[hash].js";
               },
+              // Disable code splitting - inline everything
+              inlineDynamicImports: false,
             },
+            // Prevent sharing modules between entries
+            preserveEntrySignatures: "strict",
           },
         }
       : undefined,

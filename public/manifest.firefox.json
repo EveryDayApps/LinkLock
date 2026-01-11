@@ -14,14 +14,22 @@
    "background": {
       "scripts": [
          "background.js"
-      ]
+      ],
+      "type": "module"
    },
    "icons": {
       "16": "vite.svg",
       "48": "vite.svg",
       "128": "vite.svg"
    },
-   "permissions": [],
+   "permissions": [
+      "webNavigation",
+      "webRequest",
+      "webRequestBlocking",
+      "storage",
+      "tabs",
+      "<all_urls>"
+   ],
    "browser_specific_settings": {
       "gecko": {
          "id": "linklock@example.com",

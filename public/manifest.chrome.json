@@ -12,12 +12,20 @@
       }
    },
    "background": {
-      "service_worker": "background.js"
+      "service_worker": "background.js",
+      "type": "module"
    },
    "icons": {
       "16": "vite.svg",
       "48": "vite.svg",
       "128": "vite.svg"
    },
-   "permissions": []
+   "permissions": [
+      "webNavigation",
+      "storage",
+      "tabs"
+   ],
+   "host_permissions": [
+      "<all_urls>"
+   ]
 }
