@@ -3,6 +3,7 @@
 // Handles all profile-related operations using Dexie.js with encryption
 // ============================================
 import type { Profile, ProfileWithRuleCount } from "../models/interfaces";
+import { EncryptionConfig } from "./config";
 import { db } from "./db";
 
 export class ProfileManager {
@@ -17,24 +18,69 @@ export class ProfileManager {
     db.setMasterPassword(masterPasswordHash);
 
     try {
-      const encryptedProfiles = await db.profiles.toArray();
+      const profiles = await db.getAllProfiles();
 
-      if (encryptedProfiles.length === 0) {
+      if (profiles.length === 0) {
         await this.createDefaultProfile();
       } else {
-        // Decrypt profiles to find active one
-        const profiles = await Promise.all(
-          encryptedProfiles.map((ep) => db.decryptProfile(ep))
-        );
         const activeProfile = profiles.find((p) => p.isActive);
         this.activeProfileId = activeProfile?.id || null;
       }
     } catch (error) {
-      // If decryption fails, it means old unencrypted data exists
-      console.error("Failed to decrypt profiles, clearing database:", error);
-      await db.clearAll();
-      await this.createDefaultProfile();
+      if (EncryptionConfig.logEncryption) {
+        console.error("Failed to load profiles:", error);
+      }
+
+      // Determine if we should clear the database
+      const shouldClear = await this.shouldClearDatabase(error);
+
+      if (shouldClear) {
+        if (EncryptionConfig.logEncryption) {
+          console.warn("Clearing database due to incompatible data format");
+        }
+        await db.clearAll();
+        await this.createDefaultProfile();
+      } else {
+        // Re-throw the error for the caller to handle
+        throw new Error(
+          `Profile initialization failed: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+      }
     }
+  }
+
+  /**
+   * Determine if database should be cleared based on error type
+   */
+  private async shouldClearDatabase(error: unknown): Promise<boolean> {
+    // Only clear if it's a decryption error from schema migration
+    // Don't clear for other errors (network, permissions, etc.)
+    if (error instanceof Error) {
+      const errorMessage = error.message.toLowerCase();
+
+      // Clear for known migration/encryption issues
+      if (
+        errorMessage.includes("decrypt") ||
+        errorMessage.includes("master password") ||
+        errorMessage.includes("invalid") ||
+        errorMessage.includes("malformed")
+      ) {
+        // Try to check if there's any data in the database
+        try {
+          const count = await db.t1.count();
+          // Only clear if there's actually data that's corrupted
+          return count > 0;
+        } catch {
+          // If we can't even count, it's likely corrupted
+          return true;
+        }
+      }
+    }
+
+    // For other errors, don't clear - let the error propagate
+    return false;
   }
 
   /**
@@ -50,7 +96,7 @@ export class ProfileManager {
     };
 
     const encrypted = await db.encryptProfile(profile);
-    await db.profiles.add(encrypted);
+    await db.t1.add(encrypted);
     this.activeProfileId = profile.id;
   }
 
@@ -61,19 +107,14 @@ export class ProfileManager {
     if (!this.activeProfileId) {
       return null;
     }
-    const encrypted = await db.profiles.get(this.activeProfileId);
-    if (!encrypted) return null;
-    return await db.decryptProfile(encrypted);
+    return await db.getProfileById(this.activeProfileId);
   }
 
   /**
    * Get all profiles
    */
   async getAllProfiles(): Promise<Profile[]> {
-    const encryptedProfiles = await db.profiles.toArray();
-    return await Promise.all(
-      encryptedProfiles.map((ep) => db.decryptProfile(ep))
-    );
+    return await db.getAllProfiles();
   }
 
   /**
@@ -93,9 +134,7 @@ export class ProfileManager {
    * Get profile by ID
    */
   async getProfile(profileId: string): Promise<Profile | null> {
-    const encrypted = await db.profiles.get(profileId);
-    if (!encrypted) return null;
-    return await db.decryptProfile(encrypted);
+    return await db.getProfileById(profileId);
   }
 
   /**
@@ -129,7 +168,7 @@ export class ProfileManager {
     };
 
     const encrypted = await db.encryptProfile(profile);
-    await db.profiles.add(encrypted);
+    await db.t1.add(encrypted);
 
     return { success: true, profileId };
   }
@@ -166,7 +205,7 @@ export class ProfileManager {
 
     // Re-encrypt and save
     const encrypted = await db.encryptProfile(profile);
-    await db.profiles.put(encrypted);
+    await db.t1.put(encrypted);
 
     return { success: true };
   }
@@ -188,14 +227,14 @@ export class ProfileManager {
       if (currentProfile) {
         currentProfile.isActive = false;
         const encrypted = await db.encryptProfile(currentProfile);
-        await db.profiles.put(encrypted);
+        await db.t1.put(encrypted);
       }
     }
 
     // Activate new profile
     profile.isActive = true;
     const encrypted = await db.encryptProfile(profile);
-    await db.profiles.put(encrypted);
+    await db.t1.put(encrypted);
     this.activeProfileId = profileId;
 
     return { success: true };
@@ -214,17 +253,17 @@ export class ProfileManager {
       };
     }
 
-    const count = await db.profiles.count();
+    const count = await db.t1.count();
     if (count <= 1) {
       return { success: false, error: "Cannot delete the only profile" };
     }
 
-    const profile = await this.getProfile(profileId);
+    const profile = await db.getProfileById(profileId);
     if (!profile) {
       return { success: false, error: "Profile not found" };
     }
 
-    await db.profiles.delete(profileId);
+    await db.deleteProfile(profileId);
 
     return { success: true };
   }

@@ -1,8 +1,8 @@
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
-import { Input } from "../ui/input";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 
 export default function UnlockScreen() {
   const [password, setPassword] = useState("");

@@ -148,19 +148,19 @@ async function handleMessage(
     // Rule Operations
     // ============================================
     case "GET_ALL_RULES": {
-      const rules = ruleManager.getAllRules();
+      const rules = await ruleManager.getAllRules();
       return { success: true, rules };
     }
 
     case "GET_RULES_BY_PROFILE": {
       const { profileId } = message.payload;
-      const rules = ruleManager.getRulesByProfile(profileId);
+      const rules = await ruleManager.getRulesByProfile(profileId);
       return { success: true, rules };
     }
 
     case "GET_RULE": {
       const { ruleId } = message.payload;
-      const rule = ruleManager.getRuleById(ruleId);
+      const rule = await ruleManager.getRuleById(ruleId);
       return { success: true, rule };
     }
 

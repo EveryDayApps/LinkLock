@@ -5,10 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:debug": "VITE_DEBUG_MODE=true vite",
     "build": "tsc -b && vite build",
+    "build:debug": "VITE_DEBUG_MODE=true tsc -b && VITE_DEBUG_MODE=true vite build",
     "build:chrome": "rm -rf dist_chrome && vite build --mode chrome && node scripts/copy_manifest.js chrome",
+    "build:chrome:debug": "VITE_DEBUG_MODE=true rm -rf dist_chrome && VITE_DEBUG_MODE=true vite build --mode chrome && node scripts/copy_manifest.js chrome",
     "build:firefox": "rm -rf dist_firefox && vite build --mode firefox && node scripts/copy_manifest.js firefox",
+    "build:firefox:debug": "VITE_DEBUG_MODE=true rm -rf dist_firefox && VITE_DEBUG_MODE=true vite build --mode firefox && node scripts/copy_manifest.js firefox",
     "build:extensions": "yarn build:chrome && yarn build:firefox",
+    "build:extensions:debug": "yarn build:chrome:debug && yarn build:firefox:debug",
     "lint": "eslint .",
     "preview": "vite preview"
   },

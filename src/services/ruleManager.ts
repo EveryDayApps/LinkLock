@@ -1,47 +1,54 @@
 // ============================================
 // Rule Manager Service
-// Handles CRUD operations for link rules
+// Handles CRUD operations for link rules using encrypted IndexedDB
 // ============================================
 import type { LinkRule } from "../models/interfaces";
+import { db } from "./db";
 
 export class RuleManager {
-  // Reserved for future encrypted storage implementation
-  // private storageService: StorageService;
-  // private masterPasswordHash: string = "";
-
-  constructor() {
-    // Storage service initialization reserved for future encrypted storage
-  }
+  constructor() {}
 
   /**
    * Initialize the rule manager with master password
    */
-  async initialize(_masterPasswordHash: string): Promise<void> {
-    // Master password reserved for future encrypted storage
+  async initialize(masterPasswordHash: string): Promise<void> {
+    db.setMasterPassword(masterPasswordHash);
   }
 
   /**
    * Get all rules
    */
-  getAllRules(): LinkRule[] {
-    const data = this.loadStorageData();
-    return data?.rules || [];
+  async getAllRules(): Promise<LinkRule[]> {
+    try {
+      return await db.getAllRules();
+    } catch (error) {
+      console.error("Failed to get all rules:", error);
+      return [];
+    }
   }
 
   /**
    * Get rules by profile ID
    */
-  getRulesByProfile(profileId: string): LinkRule[] {
-    const allRules = this.getAllRules();
-    return allRules.filter((rule) => rule.profileIds.includes(profileId));
+  async getRulesByProfile(profileId: string): Promise<LinkRule[]> {
+    try {
+      return await db.getRulesByProfileId(profileId);
+    } catch (error) {
+      console.error("Failed to get rules by profile:", error);
+      return [];
+    }
   }
 
   /**
    * Get rule by ID
    */
-  getRuleById(ruleId: string): LinkRule | null {
-    const allRules = this.getAllRules();
-    return allRules.find((rule) => rule.id === ruleId) || null;
+  async getRuleById(ruleId: string): Promise<LinkRule | null> {
+    try {
+      return await db.getRuleById(ruleId);
+    } catch (error) {
+      console.error("Failed to get rule by ID:", error);
+      return null;
+    }
   }
 
   /**
@@ -51,13 +58,9 @@ export class RuleManager {
     ruleData: Omit<LinkRule, "id" | "createdAt" | "updatedAt">
   ): Promise<{ success: boolean; error?: string; rule?: LinkRule }> {
     try {
-      const data = this.loadStorageData();
-      if (!data) {
-        return { success: false, error: "Failed to load storage data" };
-      }
-
       // Check if URL pattern already exists
-      const exists = data.rules.some(
+      const allRules = await this.getAllRules();
+      const exists = allRules.some(
         (r: LinkRule) => r.urlPattern === ruleData.urlPattern
       );
       if (exists) {
@@ -74,8 +77,8 @@ export class RuleManager {
         updatedAt: Date.now(),
       };
 
-      data.rules.push(newRule);
-      await this.saveStorageData(data);
+      const encrypted = await db.encryptRule(newRule);
+      await db.t2.add(encrypted);
 
       return { success: true, rule: newRule };
     } catch (error) {
@@ -96,23 +99,20 @@ export class RuleManager {
     >
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const data = this.loadStorageData();
-      if (!data) {
-        return { success: false, error: "Failed to load storage data" };
-      }
-
-      const ruleIndex = data.rules.findIndex((r: LinkRule) => r.id === ruleId);
-      if (ruleIndex === -1) {
+      const rule = await db.getRuleById(ruleId);
+      if (!rule) {
         return { success: false, error: "Rule not found" };
       }
 
-      data.rules[ruleIndex] = {
-        ...data.rules[ruleIndex],
+      const updatedRule = {
+        ...rule,
         ...updates,
         updatedAt: Date.now(),
       };
 
-      await this.saveStorageData(data);
+      const encrypted = await db.encryptRule(updatedRule);
+      await db.t2.put(encrypted);
+
       return { success: true };
     } catch (error) {
       return {
@@ -129,19 +129,12 @@ export class RuleManager {
     ruleId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const data = this.loadStorageData();
-      if (!data) {
-        return { success: false, error: "Failed to load storage data" };
-      }
-
-      const initialLength = data.rules.length;
-      data.rules = data.rules.filter((r: LinkRule) => r.id !== ruleId);
-
-      if (data.rules.length === initialLength) {
+      const rule = await db.getRuleById(ruleId);
+      if (!rule) {
         return { success: false, error: "Rule not found" };
       }
 
-      await this.saveStorageData(data);
+      await db.deleteRule(ruleId);
       return { success: true };
     } catch (error) {
       return {
@@ -158,20 +151,17 @@ export class RuleManager {
     ruleId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const data = this.loadStorageData();
-      if (!data) {
-        return { success: false, error: "Failed to load storage data" };
-      }
-
-      const ruleIndex = data.rules.findIndex((r: LinkRule) => r.id === ruleId);
-      if (ruleIndex === -1) {
+      const rule = await db.getRuleById(ruleId);
+      if (!rule) {
         return { success: false, error: "Rule not found" };
       }
 
-      data.rules[ruleIndex].enabled = !data.rules[ruleIndex].enabled;
-      data.rules[ruleIndex].updatedAt = Date.now();
+      rule.enabled = !rule.enabled;
+      rule.updatedAt = Date.now();
 
-      await this.saveStorageData(data);
+      const encrypted = await db.encryptRule(rule);
+      await db.t2.put(encrypted);
+
       return { success: true };
     } catch (error) {
       return {
@@ -189,20 +179,17 @@ export class RuleManager {
     profileId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const data = this.loadStorageData();
-      if (!data) {
-        return { success: false, error: "Failed to load storage data" };
-      }
-
-      const ruleIndex = data.rules.findIndex((r: LinkRule) => r.id === ruleId);
-      if (ruleIndex === -1) {
+      const rule = await db.getRuleById(ruleId);
+      if (!rule) {
         return { success: false, error: "Rule not found" };
       }
 
-      if (!data.rules[ruleIndex].profileIds.includes(profileId)) {
-        data.rules[ruleIndex].profileIds.push(profileId);
-        data.rules[ruleIndex].updatedAt = Date.now();
-        await this.saveStorageData(data);
+      if (!rule.profileIds.includes(profileId)) {
+        rule.profileIds.push(profileId);
+        rule.updatedAt = Date.now();
+
+        const encrypted = await db.encryptRule(rule);
+        await db.t2.put(encrypted);
       }
 
       return { success: true };
@@ -222,22 +209,19 @@ export class RuleManager {
     profileId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const data = this.loadStorageData();
-      if (!data) {
-        return { success: false, error: "Failed to load storage data" };
-      }
-
-      const ruleIndex = data.rules.findIndex((r: LinkRule) => r.id === ruleId);
-      if (ruleIndex === -1) {
+      const rule = await db.getRuleById(ruleId);
+      if (!rule) {
         return { success: false, error: "Rule not found" };
       }
 
-      data.rules[ruleIndex].profileIds = data.rules[ruleIndex].profileIds.filter(
+      rule.profileIds = rule.profileIds.filter(
         (id: string) => id !== profileId
       );
-      data.rules[ruleIndex].updatedAt = Date.now();
+      rule.updatedAt = Date.now();
 
-      await this.saveStorageData(data);
+      const encrypted = await db.encryptRule(rule);
+      await db.t2.put(encrypted);
+
       return { success: true };
     } catch (error) {
       return {
@@ -250,34 +234,6 @@ export class RuleManager {
   // ============================================
   // Private Helper Methods
   // ============================================
-
-  private loadStorageData() {
-    // For now, using localStorage synchronously
-    // In production, this would be async with proper encryption
-    const stored = localStorage.getItem("linklock_data_v1");
-    if (!stored) {
-      return { profiles: [], rules: [] };
-    }
-    try {
-      const data = JSON.parse(stored);
-      // Ensure rules array exists
-      if (!data.rules) {
-        data.rules = [];
-      }
-      if (!data.profiles) {
-        data.profiles = [];
-      }
-      return data;
-    } catch {
-      return { profiles: [], rules: [] };
-    }
-  }
-
-  private async saveStorageData(data: any): Promise<void> {
-    // For now, using localStorage synchronously
-    // In production, this would use encrypted storage
-    localStorage.setItem("linklock_data_v1", JSON.stringify(data));
-  }
 
   private generateId(): string {
     return `rule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

@@ -62,7 +62,7 @@ export function RulesScreen() {
   };
 
   const loadData = async () => {
-    const allRules = ruleManager.getAllRules();
+    const allRules = await ruleManager.getAllRules();
     const allProfiles = await profileManager.getAllProfiles();
     const activeProfile = await profileManager.getActiveProfile();
 
