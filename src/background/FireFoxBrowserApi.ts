@@ -102,7 +102,7 @@ export class FireFoxBrowserApi extends BaseBrowserApi {
       }
 
       // Get all rules
-      const rules = this.ruleManager.getAllRules();
+      const rules = await this.ruleManager.getAllRules();
 
       console.log(`Evaluating URL: ${url} against ${rules.length} rules`);
 

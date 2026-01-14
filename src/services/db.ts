@@ -20,6 +20,15 @@ interface EncryptedRule {
   profileIds: string[]; // Keep for indexing
 }
 
+// Type for rule storage with optional encryption (for debugging)
+export interface StoredRule {
+  id: string;
+  data: string; // JSON stringified rule data
+  profileIds: string[]; // Keep for indexing
+  encrypted: boolean; // Flag to indicate if data is encrypted
+  iv?: string; // Only present if encrypted
+}
+
 interface MasterPasswordData {
   id: string; // Always "master" for singleton
   userId: string;
@@ -33,7 +42,7 @@ interface MasterPasswordData {
 // Define the database schema
 export class LinkLockDatabase extends Dexie {
   profiles!: EntityTable<EncryptedProfile, "id">;
-  rules!: EntityTable<EncryptedRule, "id">;
+  rules!: EntityTable<StoredRule, "id">;
   masterPassword!: EntityTable<MasterPasswordData, "id">;
 
   private encryptionService: EncryptionService;
@@ -63,6 +72,21 @@ export class LinkLockDatabase extends Dexie {
    */
   setMasterPassword(hash: string): void {
     this.masterPasswordHash = hash;
+  }
+
+  /**
+   * Get the current master password hash
+   * Returns null if not set
+   */
+  getMasterPasswordHash(): string | null {
+    return this.masterPasswordHash;
+  }
+
+  /**
+   * Check if master password is set
+   */
+  hasMasterPasswordSet(): boolean {
+    return this.masterPasswordHash !== null;
   }
 
   /**
@@ -112,6 +136,68 @@ export class LinkLockDatabase extends Dexie {
   }
 
   /**
+   * Store a rule with optional encryption
+   * @param rule - The rule to store
+   * @param encrypt - If true, encrypts the data; if false, stores as plain JSON
+   */
+  async storeRule(rule: LinkRule, encrypt: boolean = true): Promise<StoredRule> {
+    if (encrypt) {
+      if (!this.masterPasswordHash) {
+        throw new Error("Master password not set");
+      }
+
+      const { encrypted, iv } = await this.encryptionService.encrypt(
+        JSON.stringify(rule),
+        this.masterPasswordHash
+      );
+
+      return {
+        id: rule.id,
+        data: encrypted,
+        iv: iv,
+        profileIds: rule.profileIds,
+        encrypted: true,
+      };
+    } else {
+      // Store as plain JSON (for debugging)
+      return {
+        id: rule.id,
+        data: JSON.stringify(rule),
+        profileIds: rule.profileIds,
+        encrypted: false,
+      };
+    }
+  }
+
+  /**
+   * Retrieve and decrypt/parse a rule
+   * @param storedRule - The stored rule from IndexedDB
+   */
+  async retrieveRule(storedRule: StoredRule): Promise<LinkRule> {
+    if (storedRule.encrypted) {
+      if (!this.masterPasswordHash) {
+        throw new Error("Master password not set");
+      }
+
+      if (!storedRule.iv) {
+        throw new Error("IV missing for encrypted rule");
+      }
+
+      const decrypted = await this.encryptionService.decrypt(
+        storedRule.data,
+        storedRule.iv,
+        this.masterPasswordHash
+      );
+
+      return JSON.parse(decrypted) as LinkRule;
+    } else {
+      // Parse plain JSON
+      return JSON.parse(storedRule.data) as LinkRule;
+    }
+  }
+
+  /**
+   * @deprecated Use storeRule instead
    * Encrypt a rule before storing
    */
   async encryptRule(rule: LinkRule): Promise<EncryptedRule> {
@@ -128,11 +214,12 @@ export class LinkLockDatabase extends Dexie {
       id: rule.id,
       encryptedData: encrypted,
       iv: iv,
-      profileIds: rule.profileIds, // Keep for indexing
+      profileIds: rule.profileIds,
     };
   }
 
   /**
+   * @deprecated Use retrieveRule instead
    * Decrypt a rule after retrieving
    */
   async decryptRule(encryptedRule: EncryptedRule): Promise<LinkRule> {

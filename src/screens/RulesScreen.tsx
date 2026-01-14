@@ -9,7 +9,7 @@ import {
   Trash,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { LinkRule, Profile } from "@/models/interfaces";
 import { useProfileManager, useRuleManager } from "@/services/core";
@@ -17,7 +17,6 @@ import { AddRuleModal } from "../components/rules/AddRuleModal";
 import { EditRuleModal } from "../components/rules/EditRuleModal";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
-import { Skeleton } from "../components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import { Skeleton } from "../components/ui/skeleton";
 import { Switch } from "../components/ui/switch";
 
 export function RulesScreen() {
@@ -50,27 +50,27 @@ export function RulesScreen() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<LinkRule | null>(null);
 
-  useEffect(() => {
-    initializeManagers();
-  }, []);
-
-  const initializeManagers = async () => {
-    const tempPassword = "temp-password-hash";
-    await ruleManager.initialize(tempPassword);
-    await profileManager.initialize(tempPassword);
-    loadData();
-    setIsInitialized(true);
-  };
-
-  const loadData = async () => {
-    const allRules = ruleManager.getAllRules();
+  const loadData = useCallback(async () => {
+    const allRules = await ruleManager.getAllRules();
     const allProfiles = await profileManager.getAllProfiles();
     const activeProfile = await profileManager.getActiveProfile();
 
     setRules(allRules);
     setProfiles(allProfiles);
     setActiveProfileId(activeProfile?.id || null);
-  };
+  }, [ruleManager, profileManager]);
+
+  useEffect(() => {
+    const initializeManagers = async () => {
+      const tempPassword = "temp-password-hash";
+      await ruleManager.initialize(tempPassword);
+      await profileManager.initialize(tempPassword);
+      await loadData();
+      setIsInitialized(true);
+    };
+
+    initializeManagers();
+  }, [ruleManager, profileManager, loadData]);
 
   const handleAddRule = async (
     rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">
