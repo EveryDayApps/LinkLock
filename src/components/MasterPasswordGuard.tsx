@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import { Skeleton } from "./ui/skeleton";
 
 interface MasterPasswordGuardProps {
   children: ReactNode;
@@ -38,13 +39,21 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
     setHasMasterPassword(hasPassword);
   };
 
-  // Show loading state
+  // Show loading state with skeleton
   if (isLoading) {
     return (
-      <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Loading...</p>
+      <div className="dark min-h-screen bg-background text-foreground p-8">
+        <div className="space-y-6">
+          {/* Header skeleton */}
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          {/* Content skeleton */}
+          <div className="max-w-2xl space-y-4">
+            <Skeleton className="h-32 w-full rounded-lg" />
+            <Skeleton className="h-32 w-full rounded-lg" />
+          </div>
         </div>
       </div>
     );

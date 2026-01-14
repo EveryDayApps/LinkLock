@@ -17,6 +17,7 @@ import { AddRuleModal } from "../components/rules/AddRuleModal";
 import { EditRuleModal } from "../components/rules/EditRuleModal";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
+import { Skeleton } from "../components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -163,8 +164,35 @@ export function RulesScreen() {
 
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-400">Loading rules...</p>
+      <div className="p-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <Skeleton className="h-10 w-28 rounded-md" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="flex items-center justify-center">
+                <div className="flex items-center justify-between w-full p-2">
+                  <div className="flex items-center gap-4 flex-1">
+                    <Skeleton className="w-10 h-10 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-4 w-64" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-10 rounded-full" />
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }

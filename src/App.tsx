@@ -22,22 +22,6 @@ function App() {
     setCurrentScreen(screen);
   };
 
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case "profiles":
-        return <ProfilesScreen />;
-      case "rules":
-        return <RulesScreen />;
-      case "import-export":
-        return <ImportExportScreen />;
-      case "settings":
-        return <SettingsScreen />;
-      case "about":
-        return <AboutScreen />;
-      default:
-        return <RulesScreen />;
-    }
-  };
 
   return (
     <MasterPasswordGuard>
@@ -129,9 +113,23 @@ function App() {
             </div>
           )}
 
-          {/* Main Content */}
+          {/* Main Content - All screens stay mounted to prevent flicker */}
           <div className="flex-1 overflow-auto bg-background">
-            {renderScreen()}
+            <div className={currentScreen === "rules" ? "" : "hidden"}>
+              <RulesScreen />
+            </div>
+            <div className={currentScreen === "profiles" ? "" : "hidden"}>
+              <ProfilesScreen />
+            </div>
+            <div className={currentScreen === "import-export" ? "" : "hidden"}>
+              <ImportExportScreen />
+            </div>
+            <div className={currentScreen === "settings" ? "" : "hidden"}>
+              <SettingsScreen />
+            </div>
+            <div className={currentScreen === "about" ? "" : "hidden"}>
+              <AboutScreen />
+            </div>
           </div>
         </div>
       </div>
