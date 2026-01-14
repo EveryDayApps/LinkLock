@@ -3,6 +3,7 @@
 // Handles messages from UI (popup, options, unlock page)
 // ============================================
 import type { UnlockDuration } from "../models/enums";
+import type { LocalStorageSyncService } from "../services/localStorageSyncService";
 import type { ProfileManager } from "../services/profileManager";
 import type { RuleEvaluator } from "../services/ruleEvaluator";
 import type { RuleManager } from "../services/ruleManager";
@@ -13,14 +14,13 @@ export interface MessageHandler {
   sessionManager: UnlockSessionManager;
   profileManager: ProfileManager;
   ruleManager: RuleManager;
+  localStorageSyncService: LocalStorageSyncService;
 }
 
 /**
  * Setup message listeners for communication with UI
  */
 export function setupMessageHandler(services: MessageHandler): void {
-  const { sessionManager, profileManager, ruleManager } = services;
-
   // Chrome
   if (typeof chrome !== "undefined" && chrome.runtime) {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -39,6 +39,41 @@ export function setupMessageHandler(services: MessageHandler): void {
     browser.runtime.onMessage.addListener((message, _sender) => {
       return handleMessage(message, services);
     });
+  }
+}
+
+/**
+ * Helper function to trigger local storage sync after changes
+ */
+async function triggerSync(services: MessageHandler): Promise<void> {
+  const { profileManager, ruleManager, localStorageSyncService } = services;
+
+  try {
+    const activeProfile = await profileManager.getActiveProfile();
+    if (!activeProfile) {
+      console.warn("No active profile found for sync");
+      return;
+    }
+
+    const rules = await ruleManager.getAllRules();
+    const masterPasswordHash =
+      (await import("../services/db")).db.getMasterPasswordHash();
+
+    if (!masterPasswordHash) {
+      console.warn("Master password hash not available for sync");
+      return;
+    }
+
+    await localStorageSyncService.fullSync(
+      masterPasswordHash,
+      activeProfile.id,
+      rules,
+      false // Don't encrypt in local storage for faster access
+    );
+
+    console.log("Local storage sync completed");
+  } catch (error) {
+    console.error("Failed to sync local storage:", error);
   }
 }
 
@@ -124,6 +159,8 @@ async function handleMessage(
       // Clear unlock sessions when switching profiles
       if (result.success) {
         await sessionManager.clearAllSessions();
+        // Sync local storage with new profile's rules
+        await triggerSync(services);
       }
 
       return result;
@@ -166,32 +203,78 @@ async function handleMessage(
 
     case "CREATE_RULE": {
       const { ruleData } = message.payload;
-      return await ruleManager.createRule(ruleData);
+      const result = await ruleManager.createRule(ruleData);
+      if (result.success) {
+        // Sync local storage when rule is created
+        await triggerSync(services);
+      }
+      return result;
     }
 
     case "UPDATE_RULE": {
       const { ruleId, updates } = message.payload;
-      return await ruleManager.updateRule(ruleId, updates);
+      const result = await ruleManager.updateRule(ruleId, updates);
+      if (result.success) {
+        // Sync local storage when rule is updated
+        await triggerSync(services);
+      }
+      return result;
     }
 
     case "DELETE_RULE": {
       const { ruleId } = message.payload;
-      return await ruleManager.deleteRule(ruleId);
+      const result = await ruleManager.deleteRule(ruleId);
+      if (result.success) {
+        // Sync local storage when rule is deleted
+        await triggerSync(services);
+      }
+      return result;
     }
 
     case "TOGGLE_RULE": {
       const { ruleId } = message.payload;
-      return await ruleManager.toggleRule(ruleId);
+      const result = await ruleManager.toggleRule(ruleId);
+      if (result.success) {
+        // Sync local storage when rule is toggled
+        await triggerSync(services);
+      }
+      return result;
     }
 
     case "ADD_PROFILE_TO_RULE": {
       const { ruleId, profileId } = message.payload;
-      return await ruleManager.addProfileToRule(ruleId, profileId);
+      const result = await ruleManager.addProfileToRule(ruleId, profileId);
+      if (result.success) {
+        // Sync local storage when profile is added to rule
+        await triggerSync(services);
+      }
+      return result;
     }
 
     case "REMOVE_PROFILE_FROM_RULE": {
       const { ruleId, profileId } = message.payload;
-      return await ruleManager.removeProfileFromRule(ruleId, profileId);
+      const result = await ruleManager.removeProfileFromRule(ruleId, profileId);
+      if (result.success) {
+        // Sync local storage when profile is removed from rule
+        await triggerSync(services);
+      }
+      return result;
+    }
+
+    // ============================================
+    // Sync Operations
+    // ============================================
+    case "SYNC_LOCAL_STORAGE": {
+      // Explicit sync request (e.g., after password change or on startup)
+      await triggerSync(services);
+      return { success: true };
+    }
+
+    case "CLEAR_LOCAL_STORAGE": {
+      // Clear local storage data
+      const { localStorageSyncService } = services;
+      await localStorageSyncService.clearLocalStorage();
+      return { success: true };
     }
 
     // ============================================

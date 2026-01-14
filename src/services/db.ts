@@ -126,6 +126,12 @@ export class LinkLockDatabase extends Dexie {
       throw new Error("Master password not set");
     }
 
+    console.log(
+      "[DB] Decrypting profile with hash:",
+      this.masterPasswordHash.substring(0, 10) + "..."
+    );
+    console.log("[DB] Profile ID:", encryptedProfile.id);
+
     const decrypted = await this.encryptionService.decrypt(
       encryptedProfile.encryptedData,
       encryptedProfile.iv,
@@ -140,7 +146,10 @@ export class LinkLockDatabase extends Dexie {
    * @param rule - The rule to store
    * @param encrypt - If true, encrypts the data; if false, stores as plain JSON
    */
-  async storeRule(rule: LinkRule, encrypt: boolean = true): Promise<StoredRule> {
+  async storeRule(
+    rule: LinkRule,
+    encrypt: boolean = true
+  ): Promise<StoredRule> {
     if (encrypt) {
       if (!this.masterPasswordHash) {
         throw new Error("Master password not set");

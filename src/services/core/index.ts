@@ -22,4 +22,5 @@ export {
   usePasswordService,
   useEncryptionService,
   useDatabase,
+  useLocalStorageSyncService,
 } from "./ServiceContext";

@@ -1,4 +1,5 @@
 import { useAuthManager } from "@/services/core";
+import { triggerLocalStorageSync } from "@/utils/syncHelper";
 import { Check, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
@@ -57,9 +58,22 @@ export function MasterPasswordSetup({
     if (result.success) {
       setPassword("");
       setConfirmPassword("");
+
+      // Give a small delay to ensure database writes are complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Sync local storage with initial data
+      // Note: We sync BEFORE calling onSuccess to ensure data is ready
+      try {
+        await triggerLocalStorageSync();
+      } catch (syncError) {
+        console.error("Sync failed after password setup:", syncError);
+        // Continue anyway - sync can happen later
+      }
+
       setIsSubmitting(false);
 
-      // Call success callback immediately
+      // Call success callback after sync completes
       onSuccess?.();
     } else {
       setError(result.error || "Failed to set master password");

@@ -10,7 +10,7 @@ export class ProfileManager {
   private isInitialized: boolean = false;
   private initPromise: Promise<void> | null = null;
 
-  constructor() { }
+  constructor() {}
 
   /**
    * Initialize - load active profile and set master password
@@ -86,11 +86,22 @@ export class ProfileManager {
    */
   async getActiveProfile(): Promise<Profile | null> {
     if (!this.activeProfileId) {
+      console.log("[ProfileManager] No active profile ID set");
       return null;
     }
+    console.log(
+      "[ProfileManager] Getting active profile:",
+      this.activeProfileId
+    );
     const encrypted = await db.profiles.get(this.activeProfileId);
-    if (!encrypted) return null;
-    return await db.decryptProfile(encrypted);
+    if (!encrypted) {
+      console.log("[ProfileManager] Encrypted profile not found");
+      return null;
+    }
+    console.log("[ProfileManager] Decrypting profile...");
+    const decrypted = await db.decryptProfile(encrypted);
+    console.log("[ProfileManager] Profile decrypted successfully");
+    return decrypted;
   }
 
   /**

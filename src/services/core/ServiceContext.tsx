@@ -122,3 +122,11 @@ export function useDatabase() {
   const { db } = useServices();
   return db;
 }
+
+/**
+ * Hook to access LocalStorageSyncService
+ */
+export function useLocalStorageSyncService() {
+  const { localStorageSyncService } = useServices();
+  return localStorageSyncService;
+}

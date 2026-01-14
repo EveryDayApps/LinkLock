@@ -1,4 +1,5 @@
 import { useAuthManager } from "@/services/core";
+import { triggerLocalStorageSync } from "@/utils/syncHelper";
 import {
   Check,
   Eye,
@@ -94,6 +95,9 @@ export function SettingsScreen() {
       setOldPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
+
+      // Sync local storage with new password hash
+      await triggerLocalStorageSync();
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(""), 3000);

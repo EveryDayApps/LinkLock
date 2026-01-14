@@ -1,6 +1,8 @@
 import { useAuthManager } from "@/services/core";
+import { triggerLocalStorageSync } from "@/utils/syncHelper";
 import { AlertCircle, Lock } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { MasterPasswordSetup } from "./MasterPasswordSetup";
 import {
   Dialog,
@@ -28,6 +30,14 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
       const hasPassword = await authManager.hasMasterPassword();
       setHasMasterPassword(hasPassword);
       setIsLoading(false);
+
+      // If master password exists, trigger initial sync
+      // This ensures data is synced when the app loads
+      if (hasPassword) {
+        triggerLocalStorageSync().catch((error) => {
+          console.error("Failed to perform initial sync:", error);
+        });
+      }
     };
 
     checkMasterPassword();
