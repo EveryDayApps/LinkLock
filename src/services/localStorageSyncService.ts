@@ -10,6 +10,7 @@ import type {
   LocalStorageData,
   LocalStorageRule,
 } from "../models/interfaces";
+import { toLocalStorageRule, toLocalStorageRules } from "../models/interfaces";
 import { EncryptionService } from "./encryption";
 
 // Storage keys for local storage
@@ -32,59 +33,39 @@ export class LocalStorageSyncService {
   /**
    * Convert a full LinkRule to a minimal LocalStorageRule
    * Only keeps fields necessary for extension runtime
+   * @deprecated Use toLocalStorageRule from interfaces.ts instead
    */
   convertToLocalStorageRule(rule: LinkRule): LocalStorageRule {
-    const localRule: LocalStorageRule = {
-      id: rule.id,
-      urlPattern: rule.urlPattern,
-      action: rule.action,
-      applyToAllSubdomains: rule.applyToAllSubdomains,
-      enabled: rule.enabled,
-    };
-
-    // Only include lockOptions if action is "lock"
-    if (rule.action === "lock" && rule.lockOptions) {
-      localRule.lockOptions = {
-        lockMode: rule.lockOptions.lockMode,
-      };
-      // Only include timedDuration if lockMode is timed_unlock
-      if (
-        rule.lockOptions.lockMode === "timed_unlock" &&
-        rule.lockOptions.timedDuration !== undefined
-      ) {
-        localRule.lockOptions.timedDuration = rule.lockOptions.timedDuration;
-      }
-      // Include customPasswordHash if present (never store plain password)
-      if (rule.lockOptions.customPasswordHash) {
-        localRule.lockOptions.customPasswordHash =
-          rule.lockOptions.customPasswordHash;
-      }
-    }
-
-    // Only include redirectUrl if action is "redirect"
-    if (rule.action === "redirect" && rule.redirectOptions?.redirectUrl) {
-      localRule.redirectUrl = rule.redirectOptions.redirectUrl;
-    }
-
-    return localRule;
+    return toLocalStorageRule(rule);
   }
 
   /**
    * Convert multiple LinkRules to LocalStorageRules
    * Only includes enabled rules for the specified profile
+   * @deprecated Use toLocalStorageRules from interfaces.ts instead
    */
   convertRulesToLocalStorage(
     rules: LinkRule[],
     profileId: string
   ): LocalStorageRule[] {
-    return rules
-      .filter((rule) => rule.profileIds.includes(profileId) && rule.enabled)
-      .map((rule) => this.convertToLocalStorageRule(rule));
+    return toLocalStorageRules(rules, profileId);
   }
 
   // ============================================
   // Storage Operations
   // ============================================
+
+  /**
+   * Check if chrome.storage.local is available
+   */
+  private isChromeStorageAvailable(): boolean {
+    return (
+      typeof chrome !== "undefined" &&
+      chrome.storage !== undefined &&
+      chrome.storage.local !== undefined &&
+      typeof chrome.storage.local.set === "function"
+    );
+  }
 
   /**
    * Save data to local storage with optional encryption
@@ -108,11 +89,17 @@ export class LocalStorageSyncService {
       storageValue = { data, isEncrypted: false };
     }
 
-    if (typeof chrome !== "undefined" && chrome.storage) {
+    console.log(`[LocalStorage] Saving to key: ${key}`, storageValue);
+
+    if (this.isChromeStorageAvailable()) {
+      console.log("[LocalStorage] Using chrome.storage.local");
       await chrome.storage.local.set({ [key]: storageValue });
     } else {
+      console.log("[LocalStorage] Using window.localStorage");
       localStorage.setItem(key, JSON.stringify(storageValue));
     }
+
+    console.log(`[LocalStorage] Successfully saved ${key}`);
   }
 
   /**
@@ -132,13 +119,17 @@ export class LocalStorageSyncService {
 
       let stored: StoredData | null = null;
 
-      if (typeof chrome !== "undefined" && chrome.storage) {
+      if (this.isChromeStorageAvailable()) {
+        console.log(`[LocalStorage] Loading ${key} from chrome.storage.local`);
         const result = await chrome.storage.local.get(key);
         stored = (result[key] as StoredData | undefined) ?? null;
       } else {
+        console.log(`[LocalStorage] Loading ${key} from window.localStorage`);
         const item = localStorage.getItem(key);
         stored = item ? (JSON.parse(item) as StoredData) : null;
       }
+
+      console.log(`[LocalStorage] Loaded ${key}:`, stored);
 
       if (!stored) {
         return null;
@@ -167,7 +158,8 @@ export class LocalStorageSyncService {
    * Clear all LinkLock data from local storage
    */
   async clearLocalStorage(): Promise<void> {
-    if (typeof chrome !== "undefined" && chrome.storage) {
+    console.log("[LocalStorage] Clearing all LinkLock data");
+    if (this.isChromeStorageAvailable()) {
       await chrome.storage.local.remove([
         STORAGE_KEYS.CORE,
         STORAGE_KEYS.RULES,
@@ -176,6 +168,7 @@ export class LocalStorageSyncService {
       localStorage.removeItem(STORAGE_KEYS.CORE);
       localStorage.removeItem(STORAGE_KEYS.RULES);
     }
+    console.log("[LocalStorage] Cleared all LinkLock data");
   }
 
   // ============================================
@@ -219,7 +212,7 @@ export class LocalStorageSyncService {
     encrypt: boolean = false,
     masterPasswordHash?: string
   ): Promise<void> {
-    const localRules = this.convertRulesToLocalStorage(rules, currentProfileId);
+    const localRules = toLocalStorageRules(rules, currentProfileId);
 
     await this.saveToLocalStorage(
       STORAGE_KEYS.RULES,
@@ -310,7 +303,7 @@ export class LocalStorageSyncService {
    * Check if local storage has been initialized with data
    */
   async hasData(): Promise<boolean> {
-    if (typeof chrome !== "undefined" && chrome.storage) {
+    if (this.isChromeStorageAvailable()) {
       const result = await chrome.storage.local.get(STORAGE_KEYS.CORE);
       return !!result[STORAGE_KEYS.CORE];
     } else {

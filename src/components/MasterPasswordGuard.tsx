@@ -1,9 +1,10 @@
 import { useAuthManager } from "@/services/core";
-import { triggerLocalStorageSync } from "@/utils/syncHelper";
+import { db } from "@/services/db";
 import { AlertCircle, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { MasterPasswordSetup } from "./MasterPasswordSetup";
+import { MasterPasswordVerify } from "./MasterPasswordVerify";
 import {
   Dialog,
   DialogContent,
@@ -17,40 +18,50 @@ interface MasterPasswordGuardProps {
   children: ReactNode;
 }
 
+type AuthState = "loading" | "needs_setup" | "needs_verification" | "unlocked";
+
 export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
   const authManager = useAuthManager();
-  const [hasMasterPassword, setHasMasterPassword] = useState<boolean | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(true);
+  const [authState, setAuthState] = useState<AuthState>("loading");
 
   useEffect(() => {
-    const checkMasterPassword = async () => {
-      setIsLoading(true);
+    const checkAuthState = async () => {
+      // Check if master password exists in IndexedDB
       const hasPassword = await authManager.hasMasterPassword();
-      setHasMasterPassword(hasPassword);
-      setIsLoading(false);
 
-      // If master password exists, trigger initial sync
-      // This ensures data is synced when the app loads
-      if (hasPassword) {
-        triggerLocalStorageSync().catch((error) => {
-          console.error("Failed to perform initial sync:", error);
-        });
+      if (!hasPassword) {
+        // No password set - needs initial setup
+        setAuthState("needs_setup");
+        return;
+      }
+
+      // Password exists - check if already verified in this session
+      const isVerified = db.hasMasterPasswordSet();
+
+      if (isVerified) {
+        // Already verified - user is unlocked
+        setAuthState("unlocked");
+      } else {
+        // Password exists but not verified yet - needs verification
+        setAuthState("needs_verification");
       }
     };
 
-    checkMasterPassword();
+    checkAuthState();
   }, [authManager]);
 
-  const handlePasswordSetupSuccess = async () => {
-    // Recheck master password status after successful setup
-    const hasPassword = await authManager.hasMasterPassword();
-    setHasMasterPassword(hasPassword);
+  const handleSetupSuccess = () => {
+    // After successful setup, password is automatically verified
+    setAuthState("unlocked");
+  };
+
+  const handleVerifySuccess = () => {
+    // After successful verification, user is unlocked
+    setAuthState("unlocked");
   };
 
   // Show loading state with skeleton
-  if (isLoading) {
+  if (authState === "loading") {
     return (
       <div className="dark min-h-screen bg-background text-foreground p-8">
         <div className="space-y-6">
@@ -69,12 +80,12 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
     );
   }
 
-  // If master password exists, render children
-  if (hasMasterPassword) {
+  // User is unlocked - render children
+  if (authState === "unlocked") {
     return <>{children}</>;
   }
 
-  // Show overlay with master password setup
+  // Show overlay for setup or verification
   return (
     <>
       {/* Blurred background */}
@@ -95,24 +106,38 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
               <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
                 <Lock className="w-6 h-6 text-primary-foreground" />
               </div>
-              Welcome to Link Lock
+              {authState === "needs_setup"
+                ? "Welcome to Link Lock"
+                : "Unlock Link Lock"}
             </DialogTitle>
             <DialogDescription className="text-left pt-2">
-              <div className="flex items-start gap-2 bg-amber-500/10 text-amber-500 px-4 py-3 rounded-md text-sm ">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  To start using Link Lock, you need to create a master password
-                  first. This password will encrypt and protect all your data.
+              {authState === "needs_setup" ? (
+                <div className="flex items-start gap-2 bg-amber-500/10 text-amber-500 px-4 py-3 rounded-md text-sm">
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div>
+                    To start using Link Lock, you need to create a master
+                    password first. This password will encrypt and protect all
+                    your data.
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="text-muted-foreground text-sm">
+                  Enter your master password to unlock and access your protected
+                  links.
+                </div>
+              )}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="">
-            <MasterPasswordSetup
-              onSuccess={handlePasswordSetupSuccess}
-              showAsCard={false}
-            />
+          <div>
+            {authState === "needs_setup" ? (
+              <MasterPasswordSetup
+                onSuccess={handleSetupSuccess}
+                showAsCard={false}
+              />
+            ) : (
+              <MasterPasswordVerify onSuccess={handleVerifySuccess} />
+            )}
           </div>
         </DialogContent>
       </Dialog>
