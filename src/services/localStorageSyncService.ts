@@ -212,7 +212,22 @@ export class LocalStorageSyncService {
     encrypt: boolean = false,
     masterPasswordHash?: string
   ): Promise<void> {
+    console.log("[LocalStorage] syncRules called with:", {
+      totalRules: rules.length,
+      currentProfileId,
+      rules: rules.map((r) => ({
+        id: r.id,
+        profileIds: r.profileIds,
+        enabled: r.enabled,
+      })),
+    });
+
     const localRules = toLocalStorageRules(rules, currentProfileId);
+
+    console.log("[LocalStorage] Converted to localRules:", {
+      count: localRules.length,
+      localRules,
+    });
 
     await this.saveToLocalStorage(
       STORAGE_KEYS.RULES,
