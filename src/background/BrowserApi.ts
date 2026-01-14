@@ -1,4 +1,4 @@
-import { getServices } from "../services/factory";
+import { getServices } from "../services/core";
 import { ProfileManager } from "../services/profileManager";
 import { RuleEvaluator } from "../services/ruleEvaluator";
 import { RuleManager } from "../services/ruleManager";

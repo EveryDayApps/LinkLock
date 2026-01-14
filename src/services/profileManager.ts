@@ -7,13 +7,38 @@ import { db } from "./db";
 
 export class ProfileManager {
   private activeProfileId: string | null = null;
+  private isInitialized: boolean = false;
+  private initPromise: Promise<void> | null = null;
 
-  constructor() {}
+  constructor() { }
 
   /**
    * Initialize - load active profile and set master password
+   * Uses a promise-based lock to prevent duplicate initialization
    */
   async initialize(masterPasswordHash: string): Promise<void> {
+    // If already initialized, just set the password and return
+    if (this.isInitialized) {
+      db.setMasterPassword(masterPasswordHash);
+      return;
+    }
+
+    // If initialization is in progress, wait for it to complete
+    if (this.initPromise) {
+      await this.initPromise;
+      db.setMasterPassword(masterPasswordHash);
+      return;
+    }
+
+    // Start initialization
+    this.initPromise = this.doInitialize(masterPasswordHash);
+    await this.initPromise;
+  }
+
+  /**
+   * Perform the actual initialization logic
+   */
+  private async doInitialize(masterPasswordHash: string): Promise<void> {
     db.setMasterPassword(masterPasswordHash);
 
     try {
@@ -34,6 +59,8 @@ export class ProfileManager {
       console.error("Failed to decrypt profiles, clearing database:", error);
       await db.clearAll();
       await this.createDefaultProfile();
+    } finally {
+      this.isInitialized = true;
     }
   }
 
