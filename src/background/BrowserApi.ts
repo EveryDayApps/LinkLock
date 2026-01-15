@@ -1,4 +1,4 @@
-import { getServices } from "../services/core";
+import { getServices } from "../services/core/factory";
 import type { LocalStorageSyncService } from "../services/localStorageSyncService";
 import { ProfileManager } from "../services/profileManager";
 import { RuleEvaluator } from "../services/ruleEvaluator";
@@ -121,7 +121,7 @@ export class BrowserApi extends BaseBrowserApi {
         return;
       }
 
-      const { db } = await import("../services/db");
+      const { db } = getServices();
       const masterPasswordHash = db.getMasterPasswordHash();
 
       if (!masterPasswordHash) {

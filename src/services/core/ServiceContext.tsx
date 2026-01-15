@@ -11,7 +11,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getServices } from "./factory";
 import type { Services } from "./types";
 
 /**
@@ -39,8 +38,8 @@ interface ServiceProviderProps {
  */
 export function ServiceProvider({ children, services }: ServiceProviderProps) {
   // Use provided services or create default ones
-  const [serviceInstance, setServiceInstance] = useState<Services>(
-    () => services || getServices()
+  const [serviceInstance, setServiceInstance] = useState<Services | null>(
+    () => services || null
   );
   const [isInitialized, setIsInitialized] = useState(false);
   const [initCounter, setInitCounter] = useState(0);
@@ -79,16 +78,33 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
   };
 
   useEffect(() => {
-    async function initializeDB() {
-      await serviceInstance.db.initialize();
-      setIsInitialized(true);
+    async function initializeServices() {
+      // If services were provided (e.g., for testing), use them directly
+      if (services) {
+        await services.db.initialize();
+        setServiceInstance(services);
+        setIsInitialized(true);
+        return;
+      }
+
+      // Otherwise, dynamically import and create services
+      if (!serviceInstance) {
+        const { getServices } = await import("./factory");
+        const newServices = getServices();
+        await newServices.db.initialize();
+        setServiceInstance(newServices);
+        setIsInitialized(true);
+      } else {
+        await serviceInstance.db.initialize();
+        setIsInitialized(true);
+      }
     }
 
-    initializeDB();
+    initializeServices();
   }, [initCounter]);
 
   // Don't render children until database is initialized
-  if (!isInitialized) return <InitializingScreen />;
+  if (!isInitialized || !serviceInstance) return <InitializingScreen />;
 
   // Combine services with reinitialize function
   const contextValue: ServicesWithReinitialize = {
