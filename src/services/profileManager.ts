@@ -3,53 +3,60 @@
 // Handles all profile-related operations using Dexie.js with encryption
 // ============================================
 import type { Profile, ProfileWithRuleCount } from "../models/interfaces";
-import { db } from "./db";
+import type { LinkLockDatabase } from "./db";
 
 export class ProfileManager {
+  private db: LinkLockDatabase;
   private activeProfileId: string | null = null;
   private isInitialized: boolean = false;
   private initPromise: Promise<void> | null = null;
 
-  constructor() {}
+  constructor(db: LinkLockDatabase) {
+    this.db = db;
+  }
 
   /**
-   * Initialize - load active profile and set master password
+   * Initialize - load active profile
    * Uses a promise-based lock to prevent duplicate initialization
+   * Gets master password hash from database internally
    */
-  async initialize(masterPasswordHash: string): Promise<void> {
-    // If already initialized, just set the password and return
+  async initialize(): Promise<void> {
+    // If already initialized, return
     if (this.isInitialized) {
-      db.setMasterPassword(masterPasswordHash);
       return;
     }
 
     // If initialization is in progress, wait for it to complete
     if (this.initPromise) {
       await this.initPromise;
-      db.setMasterPassword(masterPasswordHash);
       return;
     }
 
     // Start initialization
-    this.initPromise = this.doInitialize(masterPasswordHash);
+    this.initPromise = this.doInitialize();
     await this.initPromise;
   }
 
   /**
    * Perform the actual initialization logic
    */
-  private async doInitialize(masterPasswordHash: string): Promise<void> {
-    db.setMasterPassword(masterPasswordHash);
+  private async doInitialize(): Promise<void> {
+    const masterPasswordHash = this.db.getMasterPasswordHash();
+    if (!masterPasswordHash) {
+      throw new Error("Master password hash not available");
+    }
+
+    this.db.setMasterPassword(masterPasswordHash);
 
     try {
-      const encryptedProfiles = await db.profiles.toArray();
+      const encryptedProfiles = await this.db.profiles.toArray();
 
       if (encryptedProfiles.length === 0) {
         await this.createDefaultProfile();
       } else {
         // Decrypt profiles to find active one
         const profiles = await Promise.all(
-          encryptedProfiles.map((ep) => db.decryptProfile(ep))
+          encryptedProfiles.map((ep) => this.db.decryptProfile(ep))
         );
         const activeProfile = profiles.find((p) => p.isActive);
         this.activeProfileId = activeProfile?.id || null;
@@ -57,7 +64,7 @@ export class ProfileManager {
     } catch (error) {
       // If decryption fails, it means old unencrypted data exists
       console.error("Failed to decrypt profiles, clearing database:", error);
-      await db.clearAll();
+      await this.db.clearAll();
       await this.createDefaultProfile();
     } finally {
       this.isInitialized = true;
@@ -76,8 +83,8 @@ export class ProfileManager {
       updatedAt: Date.now(),
     };
 
-    const encrypted = await db.encryptProfile(profile);
-    await db.profiles.add(encrypted);
+    const encrypted = await this.db.encryptProfile(profile);
+    await this.db.profiles.add(encrypted);
     this.activeProfileId = profile.id;
   }
 
@@ -93,13 +100,13 @@ export class ProfileManager {
       "[ProfileManager] Getting active profile:",
       this.activeProfileId
     );
-    const encrypted = await db.profiles.get(this.activeProfileId);
+    const encrypted = await this.db.profiles.get(this.activeProfileId);
     if (!encrypted) {
       console.log("[ProfileManager] Encrypted profile not found");
       return null;
     }
     console.log("[ProfileManager] Decrypting profile...");
-    const decrypted = await db.decryptProfile(encrypted);
+    const decrypted = await this.db.decryptProfile(encrypted);
     console.log("[ProfileManager] Profile decrypted successfully");
     return decrypted;
   }
@@ -108,9 +115,9 @@ export class ProfileManager {
    * Get all profiles
    */
   async getAllProfiles(): Promise<Profile[]> {
-    const encryptedProfiles = await db.profiles.toArray();
+    const encryptedProfiles = await this.db.profiles.toArray();
     return await Promise.all(
-      encryptedProfiles.map((ep) => db.decryptProfile(ep))
+      encryptedProfiles.map((ep) => this.db.decryptProfile(ep))
     );
   }
 
@@ -131,9 +138,9 @@ export class ProfileManager {
    * Get profile by ID
    */
   async getProfile(profileId: string): Promise<Profile | null> {
-    const encrypted = await db.profiles.get(profileId);
+    const encrypted = await this.db.profiles.get(profileId);
     if (!encrypted) return null;
-    return await db.decryptProfile(encrypted);
+    return await this.db.decryptProfile(encrypted);
   }
 
   /**
@@ -166,8 +173,8 @@ export class ProfileManager {
       updatedAt: Date.now(),
     };
 
-    const encrypted = await db.encryptProfile(profile);
-    await db.profiles.add(encrypted);
+    const encrypted = await this.db.encryptProfile(profile);
+    await this.db.profiles.add(encrypted);
 
     return { success: true, profileId };
   }
@@ -203,8 +210,8 @@ export class ProfileManager {
     profile.updatedAt = Date.now();
 
     // Re-encrypt and save
-    const encrypted = await db.encryptProfile(profile);
-    await db.profiles.put(encrypted);
+    const encrypted = await this.db.encryptProfile(profile);
+    await this.db.profiles.put(encrypted);
 
     return { success: true };
   }
@@ -225,15 +232,15 @@ export class ProfileManager {
       const currentProfile = await this.getProfile(this.activeProfileId);
       if (currentProfile) {
         currentProfile.isActive = false;
-        const encrypted = await db.encryptProfile(currentProfile);
-        await db.profiles.put(encrypted);
+        const encrypted = await this.db.encryptProfile(currentProfile);
+        await this.db.profiles.put(encrypted);
       }
     }
 
     // Activate new profile
     profile.isActive = true;
-    const encrypted = await db.encryptProfile(profile);
-    await db.profiles.put(encrypted);
+    const encrypted = await this.db.encryptProfile(profile);
+    await this.db.profiles.put(encrypted);
     this.activeProfileId = profileId;
 
     return { success: true };
@@ -252,7 +259,7 @@ export class ProfileManager {
       };
     }
 
-    const count = await db.profiles.count();
+    const count = await this.db.profiles.count();
     if (count <= 1) {
       return { success: false, error: "Cannot delete the only profile" };
     }
@@ -262,7 +269,7 @@ export class ProfileManager {
       return { success: false, error: "Profile not found" };
     }
 
-    await db.profiles.delete(profileId);
+    await this.db.profiles.delete(profileId);
 
     return { success: true };
   }

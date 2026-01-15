@@ -3,8 +3,9 @@
 // Creates and wires all service dependencies
 // ============================================
 
+import { SyncHelper } from "../../utils/syncHelper";
 import { AuthManager } from "../authManager";
-import { db } from "../db";
+import { LinkLockDatabase } from "../db";
 import { EncryptionService } from "../encryption";
 import { LocalStorageSyncService } from "../localStorageSyncService";
 import { PasswordService } from "../passwordService";
@@ -20,24 +21,37 @@ import type { ServiceOptions, Services } from "./types";
  * This is the single source of truth for service creation
  */
 export function createServices(_options?: ServiceOptions): Services {
-  // Step 1: Create services with no dependencies
+  // Step 1: Create database instance
+  const db = new LinkLockDatabase();
+
+  // Step 2: Create services with no dependencies
   const passwordService = new PasswordService();
   const encryptionService = new EncryptionService();
 
-  // Step 2: Create services that depend on step 1
-  const authManager = new AuthManager(passwordService, encryptionService);
+  // Step 3: Create services that depend on step 1 & 2
+  const authManager = new AuthManager(db, passwordService, encryptionService);
   const storageService = new StorageService(encryptionService);
-  const localStorageSyncService = new LocalStorageSyncService(encryptionService);
+  const localStorageSyncService = new LocalStorageSyncService(
+    encryptionService
+  );
 
-  // Step 3: Create session and state management services
+  // Step 4: Create session and state management services
   const unlockSessionManager = new UnlockSessionManager();
 
-  // Step 4: Create business logic services
+  // Step 5: Create business logic services
   const ruleEvaluator = new RuleEvaluator(unlockSessionManager);
 
-  // Step 5: Create data management services
-  const profileManager = new ProfileManager();
-  const ruleManager = new RuleManager();
+  // Step 6: Create data management services
+  const profileManager = new ProfileManager(db);
+  const ruleManager = new RuleManager(db);
+
+  // Step 7: Create utility services
+  const syncHelper = new SyncHelper(
+    profileManager,
+    ruleManager,
+    localStorageSyncService,
+    db
+  );
 
   // Return all services
   return {
@@ -55,6 +69,9 @@ export function createServices(_options?: ServiceOptions): Services {
     // Business logic services
     ruleEvaluator,
     unlockSessionManager,
+
+    // Utility services
+    syncHelper,
 
     // Database
     db,

@@ -62,11 +62,14 @@ export function RulesScreen() {
 
   useEffect(() => {
     const initializeManagers = async () => {
-      const tempPassword = "temp-password-hash";
-      await ruleManager.initialize(tempPassword);
-      await profileManager.initialize(tempPassword);
-      await loadData();
-      setIsInitialized(true);
+      try {
+        await ruleManager.initialize();
+        await profileManager.initialize();
+        await loadData();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("[RulesScreen] Failed to initialize:", error);
+      }
     };
 
     initializeManagers();

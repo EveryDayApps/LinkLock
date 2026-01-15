@@ -29,7 +29,7 @@ export interface StoredRule {
   iv?: string; // Only present if encrypted
 }
 
-interface MasterPasswordData {
+export interface MasterPasswordData {
   id: string; // Always "master" for singleton
   userId: string;
   encryptedPasswordHash: string;
@@ -47,6 +47,7 @@ export class LinkLockDatabase extends Dexie {
 
   private encryptionService: EncryptionService;
   private masterPasswordHash: string | null = null;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor() {
     super("LinkLockDB");
@@ -65,6 +66,41 @@ export class LinkLockDatabase extends Dexie {
     });
 
     this.encryptionService = new EncryptionService();
+  }
+
+  async initialize(): Promise<void> {
+    // Load master password data on initialization
+    await this.loadMasterPasswordFromDB();
+  }
+
+  /**
+   * Load master password data from IndexedDB on initialization
+   * This is called automatically in the constructor
+   */
+  private async loadMasterPasswordFromDB(): Promise<void> {
+    try {
+      const masterPasswordData = await this.masterPassword.get("master");
+      console.log("masterPasswordData", masterPasswordData);
+      if (masterPasswordData) {
+        // Note: This loads the encrypted hash, not the actual master password
+        // The actual master password hash for encryption needs to be set via setMasterPassword
+        // after the user authenticates
+        this.masterPasswordHash = masterPasswordData.encryptedPasswordHash;
+      }
+    } catch (error) {
+      console.error(
+        "[DB] Error loading master password from IndexedDB:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Ensure the database is fully initialized
+   * Call this before performing operations if needed
+   */
+  async ensureInitialized(): Promise<void> {
+    await this.initializationPromise;
   }
 
   /**
@@ -87,6 +123,27 @@ export class LinkLockDatabase extends Dexie {
    */
   hasMasterPasswordSet(): boolean {
     return this.masterPasswordHash !== null;
+  }
+
+  /**
+   * Get master password data from IndexedDB
+   */
+  async getMasterPasswordData(): Promise<MasterPasswordData | undefined> {
+    return await this.masterPassword.get("master");
+  }
+
+  /**
+   * Set/Update master password data in IndexedDB
+   */
+  async setMasterPasswordData(data: MasterPasswordData): Promise<void> {
+    await this.masterPassword.put(data);
+  }
+
+  /**
+   * Delete master password data from IndexedDB
+   */
+  async deleteMasterPasswordData(): Promise<void> {
+    await this.masterPassword.delete("master");
   }
 
   /**
@@ -245,6 +302,3 @@ export class LinkLockDatabase extends Dexie {
     return JSON.parse(decrypted) as LinkRule;
   }
 }
-
-// Create and export the database instance
-export const db = new LinkLockDatabase();

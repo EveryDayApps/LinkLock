@@ -3,14 +3,28 @@
 // React Context for dependency injection
 // ============================================
 
-import { createContext, useContext, type ReactNode } from "react";
+import { InitializingScreen } from "@/components/InitializingScreen";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { getServices } from "./factory";
 import type { Services } from "./types";
 
 /**
+ * Extended services with re-initialization capability
+ */
+interface ServicesWithReinitialize extends Services {
+  reinitialize: () => Promise<void>;
+}
+
+/**
  * Context for accessing services throughout the app
  */
-const ServiceContext = createContext<Services | null>(null);
+const ServiceContext = createContext<ServicesWithReinitialize | null>(null);
 
 /**
  * Props for ServiceProvider
@@ -25,10 +39,65 @@ interface ServiceProviderProps {
  */
 export function ServiceProvider({ children, services }: ServiceProviderProps) {
   // Use provided services or create default ones
-  const serviceInstance = services || getServices();
+  const [serviceInstance, setServiceInstance] = useState<Services>(
+    () => services || getServices()
+  );
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [initCounter, setInitCounter] = useState(0);
+
+  // Reinitialize function that recreates all services
+  const reinitialize = async () => {
+    console.log("[ServiceContext] Re-initializing services...");
+    setIsInitialized(false);
+
+    // Force recreation of services by resetting the singleton
+    const { resetServices, getServices: getNewServices } = await import(
+      "./factory"
+    );
+    resetServices();
+
+    const newServices = getNewServices();
+    await newServices.db.initialize();
+
+    setServiceInstance(newServices);
+    setInitCounter((prev) => prev + 1);
+    setIsInitialized(true);
+
+    // Trigger sync after reinitialization with fresh services
+    try {
+      console.log("[ServiceContext] Triggering sync with fresh services...");
+      await newServices.syncHelper.triggerLocalStorageSync();
+      console.log("[ServiceContext] Sync completed successfully");
+    } catch (syncError) {
+      console.error(
+        "[ServiceContext] Sync failed after reinitialization:",
+        syncError
+      );
+    }
+
+    console.log("[ServiceContext] Services re-initialized successfully");
+  };
+
+  useEffect(() => {
+    async function initializeDB() {
+      await serviceInstance.db.initialize();
+      setIsInitialized(true);
+    }
+
+    initializeDB();
+  }, [initCounter]);
+
+  // Don't render children until database is initialized
+  if (!isInitialized) return <InitializingScreen />;
+
+  // Combine services with reinitialize function
+  const contextValue: ServicesWithReinitialize = {
+    ...serviceInstance,
+    reinitialize,
+  };
 
   return (
-    <ServiceContext.Provider value={serviceInstance}>
+    <ServiceContext.Provider value={contextValue}>
       {children}
     </ServiceContext.Provider>
   );
@@ -38,7 +107,7 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
  * Hook to access all services
  * @throws Error if used outside ServiceProvider
  */
-export function useServices(): Services {
+export function useServices(): ServicesWithReinitialize {
   const services = useContext(ServiceContext);
 
   if (!services) {
@@ -100,6 +169,14 @@ export function useStorageService() {
 }
 
 /**
+ * Hook to access Database
+ */
+export function useDatabase() {
+  const { db } = useServices();
+  return db;
+}
+
+/**
  * Hook to access PasswordService
  */
 export function usePasswordService() {
@@ -116,17 +193,26 @@ export function useEncryptionService() {
 }
 
 /**
- * Hook to access Database
- */
-export function useDatabase() {
-  const { db } = useServices();
-  return db;
-}
-
-/**
  * Hook to access LocalStorageSyncService
  */
 export function useLocalStorageSyncService() {
   const { localStorageSyncService } = useServices();
   return localStorageSyncService;
+}
+
+/**
+ * Hook to access SyncHelper
+ */
+export function useSyncHelper() {
+  const { syncHelper } = useServices();
+  return syncHelper;
+}
+
+/**
+ * Hook to access service re-initialization function
+ * Use this after critical changes like setting up master password
+ */
+export function useReinitializeServices() {
+  const { reinitialize } = useServices();
+  return reinitialize;
 }

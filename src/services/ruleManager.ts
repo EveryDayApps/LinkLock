@@ -3,24 +3,28 @@
 // Handles CRUD operations for link rules using IndexedDB
 // ============================================
 import type { LinkRule } from "../models/interfaces";
-import { db } from "./db";
+import type { LinkLockDatabase } from "./db";
 
 export class RuleManager {
+  private db: LinkLockDatabase;
   private encryptData: boolean = true; // Flag to control encryption
 
-  constructor() {}
+  constructor(db: LinkLockDatabase) {
+    this.db = db;
+  }
 
   /**
-   * Initialize the rule manager with master password
-   * @param masterPasswordHash - The master password hash for encryption
-   * @param encryptData - If true, encrypts rules; if false, stores as plain JSON (for debugging)
+   * Initialize the rule manager
+   * Gets master password hash from database internally
+   * @param _encryptData - If true, encrypts rules; if false, stores as plain JSON (for debugging)
    */
-  async initialize(
-    masterPasswordHash: string,
-    encryptData: boolean = true
-  ): Promise<void> {
+  async initialize(_encryptData: boolean = true): Promise<void> {
+    const masterPasswordHash = this.db.getMasterPasswordHash();
+    if (!masterPasswordHash) {
+      throw new Error("Master password hash not available");
+    }
     this.encryptData = false;
-    db.setMasterPassword(masterPasswordHash);
+    this.db.setMasterPassword(masterPasswordHash);
   }
 
   /**
@@ -42,12 +46,12 @@ export class RuleManager {
    * Get all rules
    */
   async getAllRules(): Promise<LinkRule[]> {
-    const storedRules = await db.rules.toArray();
+    const storedRules = await this.db.rules.toArray();
     const rules: LinkRule[] = [];
 
     for (const storedRule of storedRules) {
       try {
-        const rule = await db.retrieveRule(storedRule);
+        const rule = await this.db.retrieveRule(storedRule);
         rules.push(rule);
       } catch (error) {
         console.error(`Failed to retrieve rule ${storedRule.id}:`, error);
@@ -61,7 +65,7 @@ export class RuleManager {
    * Get rules by profile ID
    */
   async getRulesByProfile(profileId: string): Promise<LinkRule[]> {
-    const storedRules = await db.rules
+    const storedRules = await this.db.rules
       .where("profileIds")
       .equals(profileId)
       .toArray();
@@ -69,7 +73,7 @@ export class RuleManager {
     const rules: LinkRule[] = [];
     for (const storedRule of storedRules) {
       try {
-        const rule = await db.retrieveRule(storedRule);
+        const rule = await this.db.retrieveRule(storedRule);
         rules.push(rule);
       } catch (error) {
         console.error(`Failed to retrieve rule ${storedRule.id}:`, error);
@@ -83,13 +87,13 @@ export class RuleManager {
    * Get rule by ID
    */
   async getRuleById(ruleId: string): Promise<LinkRule | null> {
-    const storedRule = await db.rules.get(ruleId);
+    const storedRule = await this.db.rules.get(ruleId);
     if (!storedRule) {
       return null;
     }
 
     try {
-      return await db.retrieveRule(storedRule);
+      return await this.db.retrieveRule(storedRule);
     } catch (error) {
       console.error(`Failed to retrieve rule ${ruleId}:`, error);
       return null;
@@ -120,8 +124,8 @@ export class RuleManager {
         updatedAt: Date.now(),
       };
 
-      const storedRule = await db.storeRule(newRule, this.encryptData);
-      await db.rules.add(storedRule);
+      const storedRule = await this.db.storeRule(newRule, this.encryptData);
+      await this.db.rules.add(storedRule);
 
       return { success: true, rule: newRule };
     } catch (error) {
@@ -153,8 +157,8 @@ export class RuleManager {
         updatedAt: Date.now(),
       };
 
-      const storedRule = await db.storeRule(updatedRule, this.encryptData);
-      await db.rules.put(storedRule);
+      const storedRule = await this.db.storeRule(updatedRule, this.encryptData);
+      await this.db.rules.put(storedRule);
 
       return { success: true };
     } catch (error) {
@@ -172,12 +176,12 @@ export class RuleManager {
     ruleId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const existingRule = await db.rules.get(ruleId);
+      const existingRule = await this.db.rules.get(ruleId);
       if (!existingRule) {
         return { success: false, error: "Rule not found" };
       }
 
-      await db.rules.delete(ruleId);
+      await this.db.rules.delete(ruleId);
       return { success: true };
     } catch (error) {
       return {
@@ -205,8 +209,8 @@ export class RuleManager {
         updatedAt: Date.now(),
       };
 
-      const storedRule = await db.storeRule(updatedRule, this.encryptData);
-      await db.rules.put(storedRule);
+      const storedRule = await this.db.storeRule(updatedRule, this.encryptData);
+      await this.db.rules.put(storedRule);
 
       return { success: true };
     } catch (error) {
@@ -237,8 +241,11 @@ export class RuleManager {
           updatedAt: Date.now(),
         };
 
-        const storedRule = await db.storeRule(updatedRule, this.encryptData);
-        await db.rules.put(storedRule);
+        const storedRule = await this.db.storeRule(
+          updatedRule,
+          this.encryptData
+        );
+        await this.db.rules.put(storedRule);
       }
 
       return { success: true };
@@ -269,8 +276,8 @@ export class RuleManager {
         updatedAt: Date.now(),
       };
 
-      const storedRule = await db.storeRule(updatedRule, this.encryptData);
-      await db.rules.put(storedRule);
+      const storedRule = await this.db.storeRule(updatedRule, this.encryptData);
+      await this.db.rules.put(storedRule);
 
       return { success: true };
     } catch (error) {

@@ -3,6 +3,7 @@
 // Defines all service interfaces and dependencies
 // ============================================
 
+import type { SyncHelper } from "../../utils/syncHelper";
 import type { AuthManager } from "../authManager";
 import type { LinkLockDatabase } from "../db";
 import type { EncryptionService } from "../encryption";
@@ -33,6 +34,9 @@ export interface Services {
   ruleEvaluator: RuleEvaluator;
   unlockSessionManager: UnlockSessionManager;
 
+  // Utility services
+  syncHelper: SyncHelper;
+
   // Database
   db: LinkLockDatabase;
 }
@@ -40,6 +44,7 @@ export interface Services {
 /**
  * Service initialization options
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ServiceOptions {
   // Add any initialization options here
   // For example: environment, debug mode, etc.

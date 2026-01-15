@@ -1,6 +1,9 @@
-import { useAuthManager } from "@/services/core";
-import { db } from "@/services/db";
-import { triggerLocalStorageSync } from "@/utils/syncHelper";
+import {
+  useAuthManager,
+  useDatabase,
+  useReinitializeServices,
+  useSyncHelper,
+} from "@/services/core";
 import { AlertCircle, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -23,6 +26,10 @@ type AuthState = "loading" | "needs_setup" | "needs_verification" | "unlocked";
 
 export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
   const authManager = useAuthManager();
+  const syncHelper = useSyncHelper();
+
+  const db = useDatabase();
+  const reinitializeServices = useReinitializeServices();
   const [authState, setAuthState] = useState<AuthState>("loading");
 
   useEffect(() => {
@@ -36,35 +43,23 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
         return;
       }
 
-      // Password exists - check if already verified in this session
-      const isVerified = db.hasMasterPasswordSet();
-
-      // Testing bypass: auto-verify with test password and sync
-      // dont remove this block - this is for testing purpose
-      if (!isVerified) {
-        const result = await authManager.verifyMasterPassword("test1234");
-        if (result.success) {
-          console.log("[MasterPasswordGuard] Test bypass: password verified");
-          await triggerLocalStorageSync();
-          console.log("[MasterPasswordGuard] Test bypass: sync triggered");
-        }
-      }
+      // Password exists - unlock the app
       setAuthState("unlocked");
 
-      // if (isVerified) {
-      //   // Already verified - user is unlocked
-      //   setAuthState("unlocked");
-      // } else {
-      //   // Password exists but not verified yet - needs verification
-      //   setAuthState("needs_verification");
-      // }
+      syncHelper.triggerLocalStorageSync();
     };
 
     checkAuthState();
-  }, [authManager]);
+  }, [authManager, db, syncHelper]);
 
-  const handleSetupSuccess = () => {
-    // After successful setup, password is automatically verified
+  const handleSetupSuccess = async () => {
+    // After successful setup, reinitialize all services with the new password context
+    console.log(
+      "[MasterPasswordGuard] Master password set, reinitializing services..."
+    );
+    await reinitializeServices();
+    console.log("[MasterPasswordGuard] Services reinitialized, unlocking app");
+
     setAuthState("unlocked");
   };
 
@@ -94,9 +89,7 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
   }
 
   // User is unlocked - render children
-  if (authState === "unlocked") {
-    return <>{children}</>;
-  }
+  if (authState === "unlocked") return <>{children}</>;
 
   // Show overlay for setup or verification
   return (

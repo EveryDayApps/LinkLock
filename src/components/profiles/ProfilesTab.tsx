@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import type { Profile } from "../../models/interfaces";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import { Skeleton } from "../ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { Skeleton } from "../ui/skeleton";
 import { CreateProfileModal } from "./CreateProfileModal";
 import { EditProfileModal } from "./EditProfileModal";
 
@@ -29,17 +29,6 @@ export function ProfilesTab() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
 
-  useEffect(() => {
-    initializeProfiles();
-  }, []);
-
-  const initializeProfiles = async () => {
-    const tempPassword = "temp-password-hash";
-    await profileManager.initialize(tempPassword);
-    loadProfiles();
-    setIsInitialized(true);
-  };
-
   const loadProfiles = async () => {
     const allProfiles = await profileManager.getAllProfiles();
     setProfiles(allProfiles);
@@ -47,6 +36,20 @@ export function ProfilesTab() {
     const activeProfile = await profileManager.getActiveProfile();
     setActiveProfileId(activeProfile?.id || null);
   };
+
+  useEffect(() => {
+    const initializeProfiles = async () => {
+      try {
+        await profileManager.initialize();
+        await loadProfiles();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("[ProfilesTab] Failed to initialize:", error);
+      }
+    };
+
+    initializeProfiles();
+  }, [profileManager]);
 
   const handleCreateProfile = async (
     name: string

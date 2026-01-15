@@ -1,12 +1,5 @@
-import { useAuthManager } from "@/services/core";
-import { triggerLocalStorageSync } from "@/utils/syncHelper";
-import {
-  Check,
-  Eye,
-  EyeOff,
-  Key,
-  User as UserIcon,
-} from "lucide-react";
+import { useAuthManager, useSyncHelper } from "@/services/core";
+import { Check, Eye, EyeOff, Key, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MasterPasswordSetup } from "../components/MasterPasswordSetup";
 import { Button } from "../components/ui/button";
@@ -23,6 +16,7 @@ import { Skeleton } from "../components/ui/skeleton";
 
 export function SettingsScreen() {
   const authManager = useAuthManager();
+  const syncHelper = useSyncHelper();
   const [hasMasterPassword, setHasMasterPassword] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,7 +91,7 @@ export function SettingsScreen() {
       setConfirmNewPassword("");
 
       // Sync local storage with new password hash
-      await triggerLocalStorageSync();
+      await syncHelper.triggerLocalStorageSync();
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(""), 3000);

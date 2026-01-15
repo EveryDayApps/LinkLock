@@ -1,5 +1,4 @@
 import { useAuthManager } from "@/services/core";
-import { triggerLocalStorageSync } from "@/utils/syncHelper";
 import { Eye, EyeOff, Lock, Unlock } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
@@ -36,14 +35,6 @@ export function MasterPasswordVerify({ onSuccess }: MasterPasswordVerifyProps) {
 
       // Give a small delay to ensure database state is updated
       await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Sync local storage after successful verification
-      try {
-        await triggerLocalStorageSync();
-      } catch (syncError) {
-        console.error("Sync failed after password verification:", syncError);
-        // Continue anyway - sync can happen later
-      }
 
       setIsSubmitting(false);
       onSuccess?.();

@@ -3,18 +3,21 @@
 // Handles master password setup and verification
 // ============================================
 
-import { db } from "./db";
+import type { LinkLockDatabase, MasterPasswordData } from "./db";
 import { EncryptionService } from "./encryption";
 import { PasswordService } from "./passwordService";
 
 export class AuthManager {
+  private db: LinkLockDatabase;
   private passwordService: PasswordService;
   private encryptionService: EncryptionService;
 
   constructor(
+    db: LinkLockDatabase,
     passwordService?: PasswordService,
     encryptionService?: EncryptionService
   ) {
+    this.db = db;
     this.passwordService = passwordService || new PasswordService();
     this.encryptionService = encryptionService || new EncryptionService();
   }
@@ -23,7 +26,7 @@ export class AuthManager {
    * Check if master password is already set
    */
   async hasMasterPassword(): Promise<boolean> {
-    const masterData = await db.masterPassword.get("master");
+    const masterData = await this.db.getMasterPasswordData();
     return masterData !== undefined;
   }
 
@@ -57,7 +60,7 @@ export class AuthManager {
         await this.encryptionService.encrypt(passwordHash, passwordHash);
 
       // Store in database
-      const masterData = {
+      const masterData: MasterPasswordData = {
         id: "master",
         userId,
         encryptedPasswordHash,
@@ -67,10 +70,10 @@ export class AuthManager {
         updatedAt: Date.now(),
       };
 
-      await db.masterPassword.put(masterData);
+      await this.db.setMasterPasswordData(masterData);
 
       // Set the password hash in the db instance for encryption operations
-      db.setMasterPassword(passwordHash);
+      this.db.setMasterPassword(passwordHash);
 
       return {
         success: true,
@@ -98,7 +101,7 @@ export class AuthManager {
   }> {
     try {
       // Get stored master password data
-      const masterData = await db.masterPassword.get("master");
+      const masterData = await this.db.getMasterPasswordData();
       if (!masterData) {
         return {
           success: false,
@@ -123,14 +126,14 @@ export class AuthManager {
         // If decryption succeeds and matches, password is correct
         if (decryptedHash === passwordHash) {
           // Set the password hash in the db instance for encryption operations
-          db.setMasterPassword(passwordHash);
+          this.db.setMasterPassword(passwordHash);
 
           return {
             success: true,
             userId: masterData.userId,
           };
         }
-      } catch (decryptError) {
+      } catch {
         // Decryption failed, wrong password
         return {
           success: false,
@@ -173,7 +176,7 @@ export class AuthManager {
       }
 
       // Get existing master data
-      const masterData = await db.masterPassword.get("master");
+      const masterData = await this.db.getMasterPasswordData();
       if (!masterData) {
         return {
           success: false,
@@ -190,7 +193,7 @@ export class AuthManager {
         await this.encryptionService.encrypt(newPasswordHash, newPasswordHash);
 
       // Update in database
-      const updatedData = {
+      const updatedData: MasterPasswordData = {
         ...masterData,
         encryptedPasswordHash,
         salt: newSalt,
@@ -198,10 +201,10 @@ export class AuthManager {
         updatedAt: Date.now(),
       };
 
-      await db.masterPassword.put(updatedData);
+      await this.db.setMasterPasswordData(updatedData);
 
       // Update the password hash in the db instance
-      db.setMasterPassword(newPasswordHash);
+      this.db.setMasterPassword(newPasswordHash);
 
       return {
         success: true,
@@ -220,7 +223,31 @@ export class AuthManager {
    * Get the user ID
    */
   async getUserId(): Promise<string | null> {
-    const masterData = await db.masterPassword.get("master");
+    const masterData = await this.db.getMasterPasswordData();
     return masterData?.userId || null;
+  }
+
+  /**
+   * Get master password data from database
+   */
+  async getMasterPasswordData(): Promise<MasterPasswordData | undefined> {
+    return await this.db.getMasterPasswordData();
+  }
+
+  /**
+   * Get the current master password hash (in-memory)
+   * Returns null if not set
+   */
+  getMasterPasswordHash(): string | null {
+    return this.db.getMasterPasswordHash();
+  }
+
+  /**
+   * Delete master password data from database
+   */
+  async deleteMasterPassword(): Promise<void> {
+    await this.db.deleteMasterPasswordData();
+    // Clear the in-memory hash as well
+    this.db.setMasterPassword("");
   }
 }

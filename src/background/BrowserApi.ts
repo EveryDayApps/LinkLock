@@ -131,9 +131,9 @@ export class BrowserApi extends BaseBrowserApi {
 
       console.log("Performing startup sync...");
 
-      // Initialize managers with master password hash
-      await this._profileManager.initialize(masterPasswordHash);
-      await this._ruleManager.initialize(masterPasswordHash);
+      // Initialize managers
+      await this._profileManager.initialize();
+      await this._ruleManager.initialize();
 
       const activeProfile = await this._profileManager.getActiveProfile();
       if (!activeProfile) {
