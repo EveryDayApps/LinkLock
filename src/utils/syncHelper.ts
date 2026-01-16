@@ -94,8 +94,6 @@ export class SyncHelper {
       // Get master password hash first - it's required for initialization
       const masterPasswordHash = this.db.getMasterPasswordHash();
 
-      console.log("dumpx 2", masterPasswordHash);
-
       if (!masterPasswordHash) {
         console.warn("Master password hash not available for sync");
         return { success: false, error: "Master password hash not available" };

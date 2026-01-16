@@ -39,6 +39,19 @@ export interface MasterPasswordData {
   updatedAt: number;
 }
 
+// Listener types for database changes
+export type ChangeType = "create" | "update" | "delete";
+
+export interface DBChangeEvent<T> {
+  type: ChangeType;
+  table: string;
+  key: string;
+  newValue?: T;
+  oldValue?: T;
+}
+
+export type DBChangeCallback<T> = (event: DBChangeEvent<T>) => void;
+
 // Define the database schema
 export class LinkLockDatabase extends Dexie {
   profiles!: EntityTable<EncryptedProfile, "id">;
@@ -48,6 +61,16 @@ export class LinkLockDatabase extends Dexie {
   private encryptionService: EncryptionService;
   private masterPasswordHash: string | null = null;
   private initializationPromise: Promise<void> | null = null;
+
+  // Listeners for each table (IndexedDB changes)
+  private profileListeners: Set<DBChangeCallback<EncryptedProfile>> = new Set();
+  private ruleListeners: Set<DBChangeCallback<StoredRule>> = new Set();
+  private masterPasswordListeners: Set<DBChangeCallback<MasterPasswordData>> =
+    new Set();
+
+  // Listeners for in-memory master password hash changes
+  private masterPasswordHashListeners: Set<(hash: string | null) => void> =
+    new Set();
 
   constructor() {
     super("LinkLockDB");
@@ -66,6 +89,9 @@ export class LinkLockDatabase extends Dexie {
     });
 
     this.encryptionService = new EncryptionService();
+
+    // Set up change listeners for all tables
+    this.setupChangeListeners();
   }
 
   async initialize(): Promise<void> {
@@ -300,5 +326,162 @@ export class LinkLockDatabase extends Dexie {
     );
 
     return JSON.parse(decrypted) as LinkRule;
+  }
+
+  // ============================================
+  // Database Change Listeners
+  // ============================================
+
+  /**
+   * Subscribe to in-memory master password hash changes
+   * This fires when setMasterPassword() is called
+   * @param callback - Function called with the new hash value
+   * @returns Unsubscribe function
+   */
+  onMasterPasswordHashChange(
+    callback: (hash: string | null) => void
+  ): () => void {
+    this.masterPasswordHashListeners.add(callback);
+    return () => this.masterPasswordHashListeners.delete(callback);
+  }
+
+  /**
+   * Subscribe to profile table changes
+   * @param callback - Function called when profiles change
+   * @returns Unsubscribe function
+   */
+  onProfileChange(callback: DBChangeCallback<EncryptedProfile>): () => void {
+    this.profileListeners.add(callback);
+    return () => this.profileListeners.delete(callback);
+  }
+
+  /**
+   * Subscribe to rules table changes
+   * @param callback - Function called when rules change
+   * @returns Unsubscribe function
+   */
+  onRuleChange(callback: DBChangeCallback<StoredRule>): () => void {
+    this.ruleListeners.add(callback);
+    return () => this.ruleListeners.delete(callback);
+  }
+
+  /**
+   * Subscribe to master password table changes
+   * @param callback - Function called when master password changes
+   * @returns Unsubscribe function
+   */
+  onMasterPasswordChange(
+    callback: DBChangeCallback<MasterPasswordData>
+  ): () => void {
+    this.masterPasswordListeners.add(callback);
+    return () => this.masterPasswordListeners.delete(callback);
+  }
+
+  /**
+   * Notify all listeners for a specific table
+   */
+  private notifyListeners<T>(
+    listeners: Set<DBChangeCallback<T>>,
+    event: DBChangeEvent<T>
+  ): void {
+    listeners.forEach((callback) => {
+      try {
+        callback(event);
+      } catch (error) {
+        console.error("[DB] Error in change listener:", error);
+      }
+    });
+  }
+
+  /**
+   * Set up Dexie hooks for change notifications
+   */
+  private setupChangeListeners(): void {
+    // Profile hooks
+    this.profiles.hook("creating", (primKey, obj) => {
+      this.notifyListeners(this.profileListeners, {
+        type: "create",
+        table: "profiles",
+        key: primKey as string,
+        newValue: obj,
+      });
+    });
+
+    this.profiles.hook("updating", (modifications, primKey, obj) => {
+      this.notifyListeners(this.profileListeners, {
+        type: "update",
+        table: "profiles",
+        key: primKey as string,
+        oldValue: obj,
+        newValue: { ...obj, ...modifications } as EncryptedProfile,
+      });
+    });
+
+    this.profiles.hook("deleting", (primKey, obj) => {
+      this.notifyListeners(this.profileListeners, {
+        type: "delete",
+        table: "profiles",
+        key: primKey as string,
+        oldValue: obj,
+      });
+    });
+
+    // Rules hooks
+    this.rules.hook("creating", (primKey, obj) => {
+      this.notifyListeners(this.ruleListeners, {
+        type: "create",
+        table: "rules",
+        key: primKey as string,
+        newValue: obj,
+      });
+    });
+
+    this.rules.hook("updating", (modifications, primKey, obj) => {
+      this.notifyListeners(this.ruleListeners, {
+        type: "update",
+        table: "rules",
+        key: primKey as string,
+        oldValue: obj,
+        newValue: { ...obj, ...modifications } as StoredRule,
+      });
+    });
+
+    this.rules.hook("deleting", (primKey, obj) => {
+      this.notifyListeners(this.ruleListeners, {
+        type: "delete",
+        table: "rules",
+        key: primKey as string,
+        oldValue: obj,
+      });
+    });
+
+    // Master password hooks
+    this.masterPassword.hook("creating", (primKey, obj) => {
+      this.notifyListeners(this.masterPasswordListeners, {
+        type: "create",
+        table: "masterPassword",
+        key: primKey as string,
+        newValue: obj,
+      });
+    });
+
+    this.masterPassword.hook("updating", (modifications, primKey, obj) => {
+      this.notifyListeners(this.masterPasswordListeners, {
+        type: "update",
+        table: "masterPassword",
+        key: primKey as string,
+        oldValue: obj,
+        newValue: { ...obj, ...modifications } as MasterPasswordData,
+      });
+    });
+
+    this.masterPassword.hook("deleting", (primKey, obj) => {
+      this.notifyListeners(this.masterPasswordListeners, {
+        type: "delete",
+        table: "masterPassword",
+        key: primKey as string,
+        oldValue: obj,
+      });
+    });
   }
 }

@@ -325,4 +325,105 @@ export class LocalStorageSyncService {
       return localStorage.getItem(STORAGE_KEYS.CORE) !== null;
     }
   }
+
+  // ============================================
+  // Storage Change Listeners
+  // ============================================
+
+  /**
+   * Add listener for core data changes
+   * @param callback - Function to call when core data changes
+   * @returns Cleanup function to remove the listener
+   */
+  onCoreChange(
+    callback: (newValue: unknown, oldValue: unknown) => void
+  ): () => void {
+    return this.addStorageListener(STORAGE_KEYS.CORE, callback);
+  }
+
+  /**
+   * Add listener for rules data changes
+   * @param callback - Function to call when rules data changes
+   * @returns Cleanup function to remove the listener
+   */
+  onRulesChange(
+    callback: (newValue: unknown, oldValue: unknown) => void
+  ): () => void {
+    return this.addStorageListener(STORAGE_KEYS.RULES, callback);
+  }
+
+  /**
+   * Add listener for changes to a specific storage key
+   * @param key - The storage key to listen for
+   * @param callback - Function to call when the key changes
+   * @returns Cleanup function to remove the listener
+   */
+  private addStorageListener(
+    key: string,
+    callback: (newValue: unknown, oldValue: unknown) => void
+  ): () => void {
+    if (this.isChromeStorageAvailable()) {
+      const listener = (
+        changes: { [key: string]: chrome.storage.StorageChange },
+        areaName: string
+      ) => {
+        if (areaName === "local" && changes[key]) {
+          console.log(`[LocalStorage] Change detected for key: ${key}`, changes[key]);
+          callback(changes[key].newValue, changes[key].oldValue);
+        }
+      };
+
+      chrome.storage.onChanged.addListener(listener);
+      console.log(`[LocalStorage] Added chrome.storage listener for key: ${key}`);
+
+      return () => {
+        chrome.storage.onChanged.removeListener(listener);
+        console.log(`[LocalStorage] Removed chrome.storage listener for key: ${key}`);
+      };
+    } else {
+      const listener = (event: StorageEvent) => {
+        if (event.key === key) {
+          console.log(`[LocalStorage] Change detected for key: ${key}`, {
+            newValue: event.newValue,
+            oldValue: event.oldValue,
+          });
+          const newValue = event.newValue ? JSON.parse(event.newValue) : null;
+          const oldValue = event.oldValue ? JSON.parse(event.oldValue) : null;
+          callback(newValue, oldValue);
+        }
+      };
+
+      window.addEventListener("storage", listener);
+      console.log(`[LocalStorage] Added window.storage listener for key: ${key}`);
+
+      return () => {
+        window.removeEventListener("storage", listener);
+        console.log(`[LocalStorage] Removed window.storage listener for key: ${key}`);
+      };
+    }
+  }
+
+  /**
+   * Add listeners for all LinkLock storage keys
+   * @param callbacks - Object with optional callbacks for each key
+   * @returns Cleanup function to remove all listeners
+   */
+  onAnyChange(callbacks: {
+    onCoreChange?: (newValue: unknown, oldValue: unknown) => void;
+    onRulesChange?: (newValue: unknown, oldValue: unknown) => void;
+  }): () => void {
+    const cleanupFns: (() => void)[] = [];
+
+    if (callbacks.onCoreChange) {
+      cleanupFns.push(this.onCoreChange(callbacks.onCoreChange));
+    }
+
+    if (callbacks.onRulesChange) {
+      cleanupFns.push(this.onRulesChange(callbacks.onRulesChange));
+    }
+
+    return () => {
+      cleanupFns.forEach((cleanup) => cleanup());
+    };
+  }
 }

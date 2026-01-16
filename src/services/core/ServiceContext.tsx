@@ -6,11 +6,14 @@
 import { InitializingScreen } from "@/components/InitializingScreen";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
+import { getServices, resetServices } from "./factory";
 import type { Services } from "./types";
 
 /**
@@ -37,29 +40,21 @@ interface ServiceProviderProps {
  * Provider component that makes services available to all child components
  */
 export function ServiceProvider({ children, services }: ServiceProviderProps) {
-  // Use provided services or create default ones
-  const [serviceInstance, setServiceInstance] = useState<Services | null>(
-    () => services || null
-  );
+  const [serviceInstance, setServiceInstance] = useState<Services | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [initCounter, setInitCounter] = useState(0);
 
   // Reinitialize function that recreates all services
-  const reinitialize = async () => {
+  const reinitialize = useCallback(async () => {
     console.log("[ServiceContext] Re-initializing services...");
     setIsInitialized(false);
 
     // Force recreation of services by resetting the singleton
-    const { resetServices, getServices: getNewServices } = await import(
-      "./factory"
-    );
     resetServices();
 
-    const newServices = getNewServices();
+    const newServices = getServices();
     await newServices.db.initialize();
 
     setServiceInstance(newServices);
-    setInitCounter((prev) => prev + 1);
     setIsInitialized(true);
 
     // Trigger sync after reinitialization with fresh services
@@ -75,42 +70,36 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
     }
 
     console.log("[ServiceContext] Services re-initialized successfully");
-  };
+  }, []);
 
   useEffect(() => {
     async function initializeServices() {
       // If services were provided (e.g., for testing), use them directly
-      if (services) {
-        await services.db.initialize();
-        setServiceInstance(services);
-        setIsInitialized(true);
-        return;
-      }
+      const servicesToUse = services ?? getServices();
 
-      // Otherwise, dynamically import and create services
-      if (!serviceInstance) {
-        const { getServices } = await import("./factory");
-        const newServices = getServices();
-        await newServices.db.initialize();
-        setServiceInstance(newServices);
-        setIsInitialized(true);
-      } else {
-        await serviceInstance.db.initialize();
-        setIsInitialized(true);
-      }
+      await servicesToUse.db.initialize();
+      setServiceInstance(servicesToUse);
+      setIsInitialized(true);
+
+      servicesToUse.db.onRuleChange(() => {
+        servicesToUse.syncHelper.triggerLocalStorageSync();
+      });
     }
 
     initializeServices();
-  }, [initCounter]);
+  }, [services]);
+
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo<ServicesWithReinitialize | null>(() => {
+    if (!serviceInstance) return null;
+    return {
+      ...serviceInstance,
+      reinitialize,
+    };
+  }, [serviceInstance, reinitialize]);
 
   // Don't render children until database is initialized
-  if (!isInitialized || !serviceInstance) return <InitializingScreen />;
-
-  // Combine services with reinitialize function
-  const contextValue: ServicesWithReinitialize = {
-    ...serviceInstance,
-    reinitialize,
-  };
+  if (!isInitialized || !contextValue) return <InitializingScreen />;
 
   return (
     <ServiceContext.Provider value={contextValue}>
