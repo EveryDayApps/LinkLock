@@ -1,9 +1,4 @@
 import { getServices } from "../services/core/factory";
-import type { LocalStorageSyncService } from "../services/localStorageSyncService";
-import { ProfileManager } from "../services/profileManager";
-import { RuleEvaluator } from "../services/ruleEvaluator";
-import { RuleManager } from "../services/ruleManager";
-import { UnlockSessionManager } from "../services/unlockSessionManager";
 import { detectBrowser } from "../utils/browser_utils";
 import { BaseBrowserApi } from "./BaseBrowserApi";
 import { ChromeBrowserApi } from "./ChromeBrowserApi";
@@ -11,11 +6,6 @@ import { FireFoxBrowserApi } from "./FireFoxBrowserApi";
 
 export class BrowserApi extends BaseBrowserApi {
   private _browserApi: BaseBrowserApi | undefined;
-  private _ruleEvaluator?: RuleEvaluator;
-  private _sessionManager?: UnlockSessionManager;
-  private _profileManager?: ProfileManager;
-  private _ruleManager?: RuleManager;
-  private _localStorageSyncService?: LocalStorageSyncService;
 
   get api(): BaseBrowserApi {
     if (!this._browserApi) throw new Error("BrowserApi not initialized");
@@ -24,7 +14,11 @@ export class BrowserApi extends BaseBrowserApi {
 
   initialize(): void {
     console.log("BrowserApi initialized");
+    const _services = getServices();
+    _services.db.initialize();
+    super.init(_services);
     this._browserApi = this.createBrowserApi();
+    this._browserApi.init(_services);
     this.api.initialize();
     this.initializeServices();
     this.setupEventListeners();
@@ -46,35 +40,14 @@ export class BrowserApi extends BaseBrowserApi {
    * Initialize all services
    */
   private initializeServices(): void {
-    // Get services from the factory (singleton)
-    const services = getServices();
-
-    this._sessionManager = services.unlockSessionManager;
-    this._ruleEvaluator = services.ruleEvaluator;
-    this._profileManager = services.profileManager;
-    this._ruleManager = services.ruleManager;
-    this._localStorageSyncService = services.localStorageSyncService;
-
-    // Inject services into the browser API implementation
-    this.api.setServices(
-      this._ruleEvaluator,
-      this._sessionManager,
-      this._profileManager,
-      this._ruleManager
-    );
-
-    const _services = getServices();
-
-    _services.db.initialize();
-
-    _services.localStorageSyncService.onAnyChange({
-      onCoreChange: (newValue, oldValue) => {
-        console.log("Core data changed:", { newValue, oldValue });
-      },
-      onRulesChange: (newValue, oldValue) => {
-        console.log("Rules data changed:", { newValue, oldValue });
-      },
-    });
+    // _services.localStorageSyncService.onAnyChange({
+    //   onCoreChange: (newValue, oldValue) => {
+    //     console.log("Core data changed:", { newValue, oldValue });
+    //   },
+    //   onRulesChange: (newValue, oldValue) => {
+    //     console.log("Rules data changed:", { newValue, oldValue });
+    //   },
+    // });
 
     // // Load sessions from storage
     // this._sessionManager.loadFromStorage().catch((error) => {
@@ -202,19 +175,6 @@ export class BrowserApi extends BaseBrowserApi {
   // redirectNavigation(tabId: number, url: string): Promise<void> {
   //   return this.api.redirectNavigation(tabId, url);
   // }
-
-  /**
-   * Get services for external access (e.g., from popup or options page)
-   */
-  getServices() {
-    return {
-      ruleEvaluator: this._ruleEvaluator,
-      sessionManager: this._sessionManager,
-      profileManager: this._profileManager,
-      ruleManager: this._ruleManager,
-      localStorageSyncService: this._localStorageSyncService,
-    };
-  }
 }
 
 // Runtime feature detection for browser

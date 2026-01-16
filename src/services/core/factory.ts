@@ -3,11 +3,9 @@
 // Creates and wires all service dependencies
 // ============================================
 
-import { SyncHelper } from "../../utils/syncHelper";
 import { AuthManager } from "../authManager";
 import { LinkLockDatabase } from "../db";
 import { EncryptionService } from "../encryption";
-import { LocalStorageSyncService } from "../localStorageSyncService";
 import { PasswordService } from "../passwordService";
 import { ProfileManager } from "../profileManager";
 import { RuleEvaluator } from "../ruleEvaluator";
@@ -31,9 +29,6 @@ export function createServices(_options?: ServiceOptions): Services {
   // Step 3: Create services that depend on step 1 & 2
   const authManager = new AuthManager(db, passwordService, encryptionService);
   const storageService = new StorageService(encryptionService);
-  const localStorageSyncService = new LocalStorageSyncService(
-    encryptionService
-  );
 
   // Step 4: Create session and state management services
   const unlockSessionManager = new UnlockSessionManager();
@@ -46,12 +41,7 @@ export function createServices(_options?: ServiceOptions): Services {
   const ruleManager = new RuleManager(db);
 
   // Step 7: Create utility services
-  const syncHelper = new SyncHelper(
-    profileManager,
-    ruleManager,
-    localStorageSyncService,
-    db
-  );
+  const syncHelper = new SyncHelper(profileManager, ruleManager, db);
 
   // Return all services
   return {
@@ -64,7 +54,6 @@ export function createServices(_options?: ServiceOptions): Services {
     profileManager,
     ruleManager,
     storageService,
-    localStorageSyncService,
 
     // Business logic services
     ruleEvaluator,

@@ -198,22 +198,6 @@ export function useEncryptionService() {
 }
 
 /**
- * Hook to access LocalStorageSyncService
- */
-export function useLocalStorageSyncService() {
-  const { localStorageSyncService } = useServices();
-  return localStorageSyncService;
-}
-
-/**
- * Hook to access SyncHelper
- */
-export function useSyncHelper() {
-  const { syncHelper } = useServices();
-  return syncHelper;
-}
-
-/**
  * Hook to access service re-initialization function
  * Use this after critical changes like setting up master password
  */

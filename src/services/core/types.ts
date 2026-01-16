@@ -7,7 +7,6 @@ import type { SyncHelper } from "../../utils/syncHelper";
 import type { AuthManager } from "../authManager";
 import type { LinkLockDatabase } from "../db";
 import type { EncryptionService } from "../encryption";
-import type { LocalStorageSyncService } from "../localStorageSyncService";
 import type { PasswordService } from "../passwordService";
 import type { ProfileManager } from "../profileManager";
 import type { RuleEvaluator } from "../ruleEvaluator";
@@ -28,7 +27,6 @@ export interface Services {
   profileManager: ProfileManager;
   ruleManager: RuleManager;
   storageService: StorageService;
-  localStorageSyncService: LocalStorageSyncService;
 
   // Business logic services
   ruleEvaluator: RuleEvaluator;

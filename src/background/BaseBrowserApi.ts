@@ -1,34 +1,25 @@
-import type { ProfileManager } from "../services/profileManager";
-import type { RuleEvaluator } from "../services/ruleEvaluator";
-import type { RuleManager } from "../services/ruleManager";
-import type { UnlockSessionManager } from "../services/unlockSessionManager";
+import type { Services } from "@/services/core/types";
 
 export abstract class BaseBrowserApi {
-  protected ruleEvaluator?: RuleEvaluator;
-  protected sessionManager?: UnlockSessionManager;
-  protected profileManager?: ProfileManager;
-  protected ruleManager?: RuleManager;
+  protected services: Services | null | undefined;
 
   abstract initialize(): void;
   abstract openOptionsPageListener(): void;
   abstract setupNavigationListener(): void;
+
+  init(services: Services): void {
+    this.services = services;
+  }
+
+  getServices(): Services {
+    if (!this.services) {
+      throw new Error("Services not initialized in BrowserApi");
+    }
+    return this.services;
+  }
+
   // abstract blockNavigation(tabId: number): Promise<void>;
   // abstract redirectNavigation(tabId: number, url: string): Promise<void>;
-
-  /**
-   * Set the service dependencies
-   */
-  setServices(
-    ruleEvaluator: RuleEvaluator,
-    sessionManager: UnlockSessionManager,
-    profileManager: ProfileManager,
-    ruleManager: RuleManager
-  ): void {
-    this.ruleEvaluator = ruleEvaluator;
-    this.sessionManager = sessionManager;
-    this.profileManager = profileManager;
-    this.ruleManager = ruleManager;
-  }
 
   // /**
   //  * Get the unlock page URL with original URL and rule info

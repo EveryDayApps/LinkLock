@@ -3,7 +3,6 @@
 // Handles messages from UI (popup, options, unlock page)
 // ============================================
 import type { UnlockDuration } from "../models/enums";
-import type { LocalStorageSyncService } from "../services/localStorageSyncService";
 import type { ProfileManager } from "../services/profileManager";
 import type { RuleEvaluator } from "../services/ruleEvaluator";
 import type { RuleManager } from "../services/ruleManager";
@@ -14,7 +13,6 @@ export interface MessageHandler {
   sessionManager: UnlockSessionManager;
   profileManager: ProfileManager;
   ruleManager: RuleManager;
-  localStorageSyncService: LocalStorageSyncService;
 }
 
 /**
@@ -56,8 +54,9 @@ async function triggerSync(services: MessageHandler): Promise<void> {
     }
 
     const rules = await ruleManager.getAllRules();
-    const masterPasswordHash =
-      (await import("../services/db")).db.getMasterPasswordHash();
+    const masterPasswordHash = (
+      await import("../services/db")
+    ).db.getMasterPasswordHash();
 
     if (!masterPasswordHash) {
       console.warn("Master password hash not available for sync");

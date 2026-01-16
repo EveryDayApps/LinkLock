@@ -7,6 +7,26 @@ export class ChromeBrowserApi extends BaseBrowserApi {
   initialize(): void {
     console.log("ChromeBrowserApi initialized");
     // this.setupTabCleanup();
+
+    const chromeApi = this.getNativeApi();
+
+    chromeApi.storage.local.set({ token: "abc" });
+
+    chromeApi.storage.local.get("token", (result) => {
+      console.log(result.token);
+    });
+  }
+
+  getNativeApi(): typeof chrome {
+    if (typeof chrome === "undefined") {
+      throw new Error("Chrome API not available");
+    }
+
+    if (!chrome) {
+      throw new Error("Chrome API is undefined");
+    }
+
+    return chrome;
   }
 
   // /**
@@ -21,15 +41,27 @@ export class ChromeBrowserApi extends BaseBrowserApi {
   // }
 
   openOptionsPageListener(): void {
-    // Chrome Manifest V3
-    if (typeof chrome !== "undefined" && chrome.action) {
-      chrome.action.onClicked.addListener(() => {
-        chrome.runtime.openOptionsPage();
+    const chromeApi = this.getNativeApi();
+    if (chromeApi.action && chromeApi.action.onClicked) {
+      chromeApi.action.onClicked.addListener(() => {
+        chromeApi.runtime.openOptionsPage();
       });
+    } else {
+      console.error("Chrome action API not available");
     }
   }
 
   setupNavigationListener(): void {
+    const chromeApi = this.getNativeApi();
+
+    chromeApi.webNavigation.onBeforeNavigate.addListener(async (details) => {
+      // Only intercept main frame navigations (not iframes)
+      if (details.frameId !== 0) return;
+
+      const data = await super.getServices().ruleManager.getAllRules();
+      console.log("Current rules in rule manager:", data);
+    });
+
     // console.log("Setting up Chrome navigation listener");
     // if (typeof chrome === "undefined" || !chrome.webNavigation) {
     //   console.error("Chrome webNavigation API not available");
