@@ -1,4 +1,4 @@
-import { FileText, Info, Lock, Settings, Upload, User } from "lucide-react";
+import { Database, FileText, Info, Lock, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { MasterPasswordGuard } from "./components/MasterPasswordGuard";
 import { AboutScreen } from "./screens/AboutScreen";
@@ -17,9 +17,15 @@ export type ScreenType =
 function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>("rules");
   const [isSidebarOpen] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleNavigate = (screen: ScreenType) => {
     setCurrentScreen(screen);
+  };
+
+  const handleImportSuccess = () => {
+    // Increment key to force all screens to remount and reload data
+    setRefreshKey((prev) => prev + 1);
   };
 
   return (
@@ -77,8 +83,8 @@ function App() {
                   {currentScreen === "import-export" && (
                     <div className="absolute inset-0 bg-primary/10 rounded-md" />
                   )}
-                  <Upload className="w-4 h-4 relative z-10" />
-                  <span className="relative z-10">Import / Export</span>
+                  <Database className="w-4 h-4 relative z-10" />
+                  <span className="relative z-10">Backup</span>
                 </button>
                 <button
                   onClick={() => handleNavigate("settings")}
@@ -115,16 +121,16 @@ function App() {
           {/* Main Content - All screens stay mounted to prevent flicker */}
           <div className="flex-1 overflow-auto bg-background">
             <div className={currentScreen === "rules" ? "" : "hidden"}>
-              <RulesScreen />
+              <RulesScreen key={`rules-${refreshKey}`} />
             </div>
             <div className={currentScreen === "profiles" ? "" : "hidden"}>
-              <ProfilesScreen />
+              <ProfilesScreen key={`profiles-${refreshKey}`} />
             </div>
             <div className={currentScreen === "import-export" ? "" : "hidden"}>
-              <ImportExportScreen />
+              <ImportExportScreen onImportSuccess={handleImportSuccess} />
             </div>
             <div className={currentScreen === "settings" ? "" : "hidden"}>
-              <SettingsScreen />
+              <SettingsScreen key={`settings-${refreshKey}`} />
             </div>
             <div className={currentScreen === "about" ? "" : "hidden"}>
               <AboutScreen />

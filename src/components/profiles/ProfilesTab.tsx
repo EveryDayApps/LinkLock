@@ -16,6 +16,8 @@ import { Skeleton } from "../ui/skeleton";
 import { CreateProfileModal } from "./CreateProfileModal";
 import { EditProfileModal } from "./EditProfileModal";
 
+const MAX_PROFILES = 7;
+
 export function ProfilesTab() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
@@ -60,7 +62,8 @@ export function ProfilesTab() {
         event.key === "P" &&
         !["INPUT", "TEXTAREA"].includes(
           (event.target as HTMLElement).tagName
-        )
+        ) &&
+        profiles.length < MAX_PROFILES
       ) {
         event.preventDefault();
         setCreateModalOpen(true);
@@ -69,11 +72,14 @@ export function ProfilesTab() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [profiles.length]);
 
   const handleCreateProfile = async (
     name: string
   ): Promise<{ success: boolean; error?: string }> => {
+    if (profiles.length >= MAX_PROFILES) {
+      return { success: false, error: `Maximum of ${MAX_PROFILES} profiles allowed` };
+    }
     const result = await profileManager.createProfile(name);
     if (result.success) {
       loadProfiles();
@@ -169,13 +175,24 @@ export function ProfilesTab() {
             Manage and switch between different profiles for various contexts
           </p>
         </div>
-        <Button onClick={() => setCreateModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Profile
-          <kbd className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-primary-foreground/20 rounded">
-            Shift+P
-          </kbd>
-        </Button>
+        <div className="flex items-center gap-3">
+          {profiles.length >= MAX_PROFILES && (
+            <span className="text-sm text-muted-foreground">
+              {profiles.length}/{MAX_PROFILES} profiles
+            </span>
+          )}
+          <Button
+            onClick={() => setCreateModalOpen(true)}
+            disabled={profiles.length >= MAX_PROFILES}
+            title={profiles.length >= MAX_PROFILES ? `Maximum of ${MAX_PROFILES} profiles allowed` : undefined}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Profile
+            <kbd className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-primary-foreground/20 rounded">
+              Shift+P
+            </kbd>
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">
