@@ -3,7 +3,6 @@
 // Defines all service interfaces and dependencies
 // ============================================
 
-import type { SyncHelper } from "../../utils/syncHelper";
 import type { AuthManager } from "../authManager";
 import type { LinkLockDatabase } from "../db";
 import type { EncryptionService } from "../encryption";
@@ -31,9 +30,6 @@ export interface Services {
   // Business logic services
   ruleEvaluator: RuleEvaluator;
   unlockSessionManager: UnlockSessionManager;
-
-  // Utility services
-  syncHelper: SyncHelper;
 
   // Database
   db: LinkLockDatabase;

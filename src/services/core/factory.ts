@@ -40,9 +40,6 @@ export function createServices(_options?: ServiceOptions): Services {
   const profileManager = new ProfileManager(db);
   const ruleManager = new RuleManager(db);
 
-  // Step 7: Create utility services
-  const syncHelper = new SyncHelper(profileManager, ruleManager, db);
-
   // Return all services
   return {
     // Core services
@@ -58,9 +55,6 @@ export function createServices(_options?: ServiceOptions): Services {
     // Business logic services
     ruleEvaluator,
     unlockSessionManager,
-
-    // Utility services
-    syncHelper,
 
     // Database
     db,

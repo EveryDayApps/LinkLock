@@ -15,7 +15,6 @@ export {
   useAuthManager,
   useDatabase,
   useEncryptionService,
-  useLocalStorageSyncService,
   usePasswordService,
   useProfileManager,
   useReinitializeServices,
@@ -23,6 +22,5 @@ export {
   useRuleManager,
   useServices,
   useStorageService,
-  useSyncHelper,
   useUnlockSessionManager,
 } from "./ServiceContext";

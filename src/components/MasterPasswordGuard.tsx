@@ -2,7 +2,6 @@ import {
   useAuthManager,
   useDatabase,
   useReinitializeServices,
-  useSyncHelper,
 } from "@/services/core";
 import { AlertCircle, Lock } from "lucide-react";
 import type { ReactNode } from "react";
@@ -26,7 +25,6 @@ type AuthState = "loading" | "needs_setup" | "needs_verification" | "unlocked";
 
 export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
   const authManager = useAuthManager();
-  const syncHelper = useSyncHelper();
 
   const db = useDatabase();
   const reinitializeServices = useReinitializeServices();
@@ -45,12 +43,10 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
 
       // Password exists - unlock the app
       setAuthState("unlocked");
-
-      syncHelper.triggerLocalStorageSync();
     };
 
     checkAuthState();
-  }, [authManager, db, syncHelper]);
+  }, [authManager, db]);
 
   const handleSetupSuccess = async () => {
     // After successful setup, reinitialize all services with the new password context
