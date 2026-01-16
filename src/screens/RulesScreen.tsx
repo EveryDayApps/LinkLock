@@ -75,6 +75,26 @@ export function RulesScreen() {
     initializeManagers();
   }, [ruleManager, profileManager, loadData]);
 
+  // Keyboard shortcut: Shift+R to open Add Rule modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Shift+R and ensure no input/textarea is focused
+      if (
+        event.shiftKey &&
+        event.key === "R" &&
+        !["INPUT", "TEXTAREA"].includes(
+          (event.target as HTMLElement).tagName
+        )
+      ) {
+        event.preventDefault();
+        setAddModalOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleAddRule = async (
     rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">
   ): Promise<{ success: boolean; error?: string }> => {
@@ -212,6 +232,9 @@ export function RulesScreen() {
         <Button onClick={() => setAddModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Rule
+          <kbd className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-primary-foreground/20 rounded">
+            Shift+R
+          </kbd>
         </Button>
       </div>
 

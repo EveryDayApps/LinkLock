@@ -57,18 +57,6 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
     setServiceInstance(newServices);
     setIsInitialized(true);
 
-    // Trigger sync after reinitialization with fresh services
-    try {
-      console.log("[ServiceContext] Triggering sync with fresh services...");
-      await newServices.syncHelper.triggerLocalStorageSync();
-      console.log("[ServiceContext] Sync completed successfully");
-    } catch (syncError) {
-      console.error(
-        "[ServiceContext] Sync failed after reinitialization:",
-        syncError
-      );
-    }
-
     console.log("[ServiceContext] Services re-initialized successfully");
   }, []);
 
@@ -80,10 +68,6 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
       await servicesToUse.db.initialize();
       setServiceInstance(servicesToUse);
       setIsInitialized(true);
-
-      servicesToUse.db.onRuleChange(() => {
-        servicesToUse.syncHelper.triggerLocalStorageSync();
-      });
     }
 
     initializeServices();

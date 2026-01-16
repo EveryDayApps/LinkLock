@@ -51,6 +51,26 @@ export function ProfilesTab() {
     initializeProfiles();
   }, [profileManager]);
 
+  // Keyboard shortcut: Shift+P to open Create Profile modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Shift+P and ensure no input/textarea is focused
+      if (
+        event.shiftKey &&
+        event.key === "P" &&
+        !["INPUT", "TEXTAREA"].includes(
+          (event.target as HTMLElement).tagName
+        )
+      ) {
+        event.preventDefault();
+        setCreateModalOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleCreateProfile = async (
     name: string
   ): Promise<{ success: boolean; error?: string }> => {
@@ -152,6 +172,9 @@ export function ProfilesTab() {
         <Button onClick={() => setCreateModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           New Profile
+          <kbd className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-primary-foreground/20 rounded">
+            Shift+P
+          </kbd>
         </Button>
       </div>
 
