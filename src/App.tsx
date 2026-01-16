@@ -22,7 +22,6 @@ function App() {
     setCurrentScreen(screen);
   };
 
-
   return (
     <MasterPasswordGuard>
       <div className="dark min-h-screen bg-background text-foreground">

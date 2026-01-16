@@ -6,6 +6,7 @@ import {
 import { AlertCircle, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { InitializingScreen } from "./InitializingScreen";
 import { MasterPasswordSetup } from "./MasterPasswordSetup";
 import { MasterPasswordVerify } from "./MasterPasswordVerify";
 import {
@@ -15,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import { Skeleton } from "./ui/skeleton";
 
 interface MasterPasswordGuardProps {
   children: ReactNode;
@@ -64,25 +64,8 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
     setAuthState("unlocked");
   };
 
-  // Show loading state with skeleton
-  if (authState === "loading") {
-    return (
-      <div className="dark min-h-screen bg-background text-foreground p-8">
-        <div className="space-y-6">
-          {/* Header skeleton */}
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-72" />
-          </div>
-          {/* Content skeleton */}
-          <div className="max-w-2xl space-y-4">
-            <Skeleton className="h-32 w-full rounded-lg" />
-            <Skeleton className="h-32 w-full rounded-lg" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Show loading state with skeleton : todo fix the flicker
+  if (authState === "loading") return <InitializingScreen />;
 
   // User is unlocked - render children
   if (authState === "unlocked") return <>{children}</>;

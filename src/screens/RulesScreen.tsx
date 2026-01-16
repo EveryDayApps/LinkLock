@@ -82,9 +82,7 @@ export function RulesScreen() {
       if (
         event.shiftKey &&
         event.key === "R" &&
-        !["INPUT", "TEXTAREA"].includes(
-          (event.target as HTMLElement).tagName
-        )
+        !["INPUT", "TEXTAREA"].includes((event.target as HTMLElement).tagName)
       ) {
         event.preventDefault();
         setAddModalOpen(true);
