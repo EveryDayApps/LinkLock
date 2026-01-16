@@ -9,7 +9,7 @@ import {
   Trash,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { LinkRule, Profile } from "@/models/interfaces";
 import { useProfileManager, useRuleManager } from "@/services/core";
@@ -32,6 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import { Skeleton } from "../components/ui/skeleton";
 import { Switch } from "../components/ui/switch";
 
 export function RulesScreen() {
@@ -49,27 +50,50 @@ export function RulesScreen() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<LinkRule | null>(null);
 
-  useEffect(() => {
-    initializeManagers();
-  }, []);
-
-  const initializeManagers = async () => {
-    const tempPassword = "temp-password-hash";
-    await ruleManager.initialize(tempPassword);
-    await profileManager.initialize(tempPassword);
-    loadData();
-    setIsInitialized(true);
-  };
-
-  const loadData = async () => {
-    const allRules = ruleManager.getAllRules();
+  const loadData = useCallback(async () => {
+    const allRules = await ruleManager.getAllRules();
     const allProfiles = await profileManager.getAllProfiles();
     const activeProfile = await profileManager.getActiveProfile();
 
     setRules(allRules);
     setProfiles(allProfiles);
     setActiveProfileId(activeProfile?.id || null);
-  };
+  }, [ruleManager, profileManager]);
+
+  useEffect(() => {
+    const initializeManagers = async () => {
+      try {
+        await ruleManager.initialize();
+        await profileManager.initialize();
+        await loadData();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("[RulesScreen] Failed to initialize:", error);
+      }
+    };
+
+    initializeManagers();
+  }, [ruleManager, profileManager, loadData]);
+
+  // Keyboard shortcut: Shift+R to open Add Rule modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Shift+R and ensure no input/textarea is focused
+      if (
+        event.shiftKey &&
+        event.key === "R" &&
+        !["INPUT", "TEXTAREA"].includes(
+          (event.target as HTMLElement).tagName
+        )
+      ) {
+        event.preventDefault();
+        setAddModalOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleAddRule = async (
     rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">
@@ -163,8 +187,35 @@ export function RulesScreen() {
 
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-400">Loading rules...</p>
+      <div className="p-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <Skeleton className="h-10 w-28 rounded-md" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="flex items-center justify-center">
+                <div className="flex items-center justify-between w-full p-2">
+                  <div className="flex items-center gap-4 flex-1">
+                    <Skeleton className="w-10 h-10 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-4 w-64" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-10 rounded-full" />
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -181,6 +232,9 @@ export function RulesScreen() {
         <Button onClick={() => setAddModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Rule
+          <kbd className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-primary-foreground/20 rounded">
+            Shift+R
+          </kbd>
         </Button>
       </div>
 

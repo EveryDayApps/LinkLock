@@ -38,6 +38,7 @@ export interface Services {
 /**
  * Service initialization options
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ServiceOptions {
   // Add any initialization options here
   // For example: environment, debug mode, etc.

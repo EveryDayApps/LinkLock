@@ -199,6 +199,31 @@ export async function removeProfileFromRule(
 }
 
 // ============================================
+// Sync Operations
+// ============================================
+
+/**
+ * Trigger a sync of data from IndexedDB to local storage
+ * Call this after password setup, password change, or on startup
+ */
+export async function syncLocalStorage(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return sendMessage("SYNC_LOCAL_STORAGE");
+}
+
+/**
+ * Clear all LinkLock data from local storage
+ */
+export async function clearLocalStorage(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return sendMessage("CLEAR_LOCAL_STORAGE");
+}
+
+// ============================================
 // Debug Operations
 // ============================================
 

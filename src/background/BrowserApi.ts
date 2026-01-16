@@ -1,20 +1,11 @@
-import { getServices } from "../services/factory";
-import { ProfileManager } from "../services/profileManager";
-import { RuleEvaluator } from "../services/ruleEvaluator";
-import { RuleManager } from "../services/ruleManager";
-import { UnlockSessionManager } from "../services/unlockSessionManager";
+import { getServices } from "../services/core/factory";
 import { detectBrowser } from "../utils/browser_utils";
 import { BaseBrowserApi } from "./BaseBrowserApi";
 import { ChromeBrowserApi } from "./ChromeBrowserApi";
 import { FireFoxBrowserApi } from "./FireFoxBrowserApi";
-import { setupMessageHandler } from "./messageHandler";
 
 export class BrowserApi extends BaseBrowserApi {
   private _browserApi: BaseBrowserApi | undefined;
-  private _ruleEvaluator?: RuleEvaluator;
-  private _sessionManager?: UnlockSessionManager;
-  private _profileManager?: ProfileManager;
-  private _ruleManager?: RuleManager;
 
   get api(): BaseBrowserApi {
     if (!this._browserApi) throw new Error("BrowserApi not initialized");
@@ -23,44 +14,68 @@ export class BrowserApi extends BaseBrowserApi {
 
   initialize(): void {
     console.log("BrowserApi initialized");
+    const _services = getServices();
+    _services.db.initialize();
+    super.init(_services);
     this._browserApi = this.createBrowserApi();
+    this._browserApi.init(_services);
     this.api.initialize();
     this.initializeServices();
     this.setupEventListeners();
+  }
+
+  private createBrowserApi(): BaseBrowserApi {
+    const browserType = detectBrowser();
+    switch (browserType) {
+      case "chrome":
+        return new ChromeBrowserApi();
+      case "firefox":
+        return new FireFoxBrowserApi();
+      default:
+        throw new Error(`Unsupported browser: ${browserType}`);
+    }
   }
 
   /**
    * Initialize all services
    */
   private initializeServices(): void {
-    // Get services from the factory (singleton)
-    const services = getServices();
+    // _services.localStorageSyncService.onAnyChange({
+    //   onCoreChange: (newValue, oldValue) => {
+    //     console.log("Core data changed:", { newValue, oldValue });
+    //   },
+    //   onRulesChange: (newValue, oldValue) => {
+    //     console.log("Rules data changed:", { newValue, oldValue });
+    //   },
+    // });
 
-    this._sessionManager = services.unlockSessionManager;
-    this._ruleEvaluator = services.ruleEvaluator;
-    this._profileManager = services.profileManager;
-    this._ruleManager = services.ruleManager;
+    // // Load sessions from storage
+    // this._sessionManager.loadFromStorage().catch((error) => {
+    //   console.error("Failed to load unlock sessions:", error);
+    // });
 
-    // Inject services into the browser API implementation
-    this.api.setServices(
-      this._ruleEvaluator,
-      this._sessionManager,
-      this._profileManager,
-      this._ruleManager
-    );
+    // const masterPasswordHash = services.db.getMasterPasswordHash();
 
-    // Setup message handler for communication with UI
-    setupMessageHandler({
-      ruleEvaluator: this._ruleEvaluator,
-      sessionManager: this._sessionManager,
-      profileManager: this._profileManager,
-      ruleManager: this._ruleManager,
-    });
+    // this._localStorageSyncService
+    //   .loadAll(masterPasswordHash ?? "")
+    //   .then((a) => {
+    //     console.log("Local storage sync service loaded data successfully");
+    //     console.log(a);
+    //   })
+    //   .catch((error) => {
+    //     console.error(
+    //       "Failed to load data in local storage sync service:",
+    //       error
+    //     );
+    //   });
 
-    // Load sessions from storage
-    this._sessionManager.loadFromStorage().catch((error) => {
-      console.error("Failed to load unlock sessions:", error);
-    });
+    // // Trigger initial sync on startup
+    // this.performStartupSync().catch((error) => {
+    //   console.error("Failed to perform startup sync:", error);
+    // });
+
+    // // Setup extension lifecycle listeners
+    // this.setupLifecycleListeners();
 
     console.log("Services initialized successfully");
   }
@@ -78,37 +93,88 @@ export class BrowserApi extends BaseBrowserApi {
     this.api.setupNavigationListener();
   }
 
-  blockNavigation(tabId: number): Promise<void> {
-    return this.api.blockNavigation(tabId);
-  }
+  // /**
+  //  * Setup extension lifecycle listeners (install, startup)
+  //  */
+  // private setupLifecycleListeners(): void {
+  //   if (typeof chrome !== "undefined" && chrome.runtime) {
+  //     // Listen for extension installation or update
+  //     chrome.runtime.onInstalled.addListener((details) => {
+  //       console.log("Extension installed/updated:", details.reason);
+  //       // Trigger sync after install/update
+  //       this.performStartupSync().catch((error) => {
+  //         console.error("Failed to sync after install:", error);
+  //       });
+  //     });
 
-  redirectNavigation(tabId: number, url: string): Promise<void> {
-    return this.api.redirectNavigation(tabId, url);
-  }
+  //     // Listen for browser/extension startup
+  //     chrome.runtime.onStartup.addListener(() => {
+  //       console.log("Extension startup");
+  //       // Trigger sync on startup
+  //       this.performStartupSync().catch((error) => {
+  //         console.error("Failed to sync on startup:", error);
+  //       });
+  //     });
+  //   }
+  // }
 
-  private createBrowserApi(): BaseBrowserApi {
-    const browserType = detectBrowser();
-    switch (browserType) {
-      case "chrome":
-        return new ChromeBrowserApi();
-      case "firefox":
-        return new FireFoxBrowserApi();
-      default:
-        throw new Error(`Unsupported browser: ${browserType}`);
-    }
-  }
+  // /**
+  //  * Perform startup sync if master password is set
+  //  */
+  // private async performStartupSync(): Promise<void> {
+  //   try {
+  //     if (
+  //       !this._profileManager ||
+  //       !this._ruleManager ||
+  //       !this._localStorageSyncService
+  //     ) {
+  //       console.warn("Services not yet initialized, skipping startup sync");
+  //       return;
+  //     }
 
-  /**
-   * Get services for external access (e.g., from popup or options page)
-   */
-  getServices() {
-    return {
-      ruleEvaluator: this._ruleEvaluator,
-      sessionManager: this._sessionManager,
-      profileManager: this._profileManager,
-      ruleManager: this._ruleManager,
-    };
-  }
+  //     const { db } = getServices();
+  //     const masterPasswordHash = db.getMasterPasswordHash();
+
+  //     if (!masterPasswordHash) {
+  //       console.log("Master password not set yet, skipping startup sync");
+  //       return;
+  //     }
+
+  //     console.log("Performing startup sync...");
+
+  //     // Initialize managers
+  //     await this._profileManager.initialize();
+  //     await this._ruleManager.initialize();
+
+  //     const activeProfile = await this._profileManager.getActiveProfile();
+  //     if (!activeProfile) {
+  //       console.warn("No active profile found for startup sync");
+  //       return;
+  //     }
+
+  //     const rules = await this._ruleManager.getAllRules();
+
+  //     await this._localStorageSyncService.fullSync(
+  //       masterPasswordHash,
+  //       activeProfile.id,
+  //       rules,
+  //       false // Don't encrypt in local storage for faster access
+  //     );
+
+  //     console.log("Startup sync completed successfully");
+  //   } catch (error) {
+  //     console.error("Startup sync failed:", error);
+  //     // Don't throw - allow extension to continue working
+  //   }
+  // }
+
+  // blockNavigation(tabId: number): Promise<void> {
+  //   return this.api.blockNavigation(tabId);
+  // }
+
+  // redirectNavigation(tabId: number, url: string): Promise<void> {
+  //   return this.api.redirectNavigation(tabId, url);
+  // }
 }
 
 // Runtime feature detection for browser

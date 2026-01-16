@@ -3,14 +3,30 @@
 // React Context for dependency injection
 // ============================================
 
-import { createContext, useContext, type ReactNode } from "react";
-import { getServices } from "./factory";
+import { InitializingScreen } from "@/components/InitializingScreen";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { getServices, resetServices } from "./factory";
 import type { Services } from "./types";
+
+/**
+ * Extended services with re-initialization capability
+ */
+interface ServicesWithReinitialize extends Services {
+  reinitialize: () => Promise<void>;
+}
 
 /**
  * Context for accessing services throughout the app
  */
-const ServiceContext = createContext<Services | null>(null);
+const ServiceContext = createContext<ServicesWithReinitialize | null>(null);
 
 /**
  * Props for ServiceProvider
@@ -24,11 +40,53 @@ interface ServiceProviderProps {
  * Provider component that makes services available to all child components
  */
 export function ServiceProvider({ children, services }: ServiceProviderProps) {
-  // Use provided services or create default ones
-  const serviceInstance = services || getServices();
+  const [serviceInstance, setServiceInstance] = useState<Services | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Reinitialize function that recreates all services
+  const reinitialize = useCallback(async () => {
+    console.log("[ServiceContext] Re-initializing services...");
+    setIsInitialized(false);
+
+    // Force recreation of services by resetting the singleton
+    resetServices();
+
+    const newServices = getServices();
+    await newServices.db.initialize();
+
+    setServiceInstance(newServices);
+    setIsInitialized(true);
+
+    console.log("[ServiceContext] Services re-initialized successfully");
+  }, []);
+
+  useEffect(() => {
+    async function initializeServices() {
+      // If services were provided (e.g., for testing), use them directly
+      const servicesToUse = services ?? getServices();
+
+      await servicesToUse.db.initialize();
+      setServiceInstance(servicesToUse);
+      setIsInitialized(true);
+    }
+
+    initializeServices();
+  }, [services]);
+
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo<ServicesWithReinitialize | null>(() => {
+    if (!serviceInstance) return null;
+    return {
+      ...serviceInstance,
+      reinitialize,
+    };
+  }, [serviceInstance, reinitialize]);
+
+  // Don't render children until database is initialized
+  if (!isInitialized || !contextValue) return <InitializingScreen />;
 
   return (
-    <ServiceContext.Provider value={serviceInstance}>
+    <ServiceContext.Provider value={contextValue}>
       {children}
     </ServiceContext.Provider>
   );
@@ -38,7 +96,7 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
  * Hook to access all services
  * @throws Error if used outside ServiceProvider
  */
-export function useServices(): Services {
+export function useServices(): ServicesWithReinitialize {
   const services = useContext(ServiceContext);
 
   if (!services) {
@@ -100,6 +158,14 @@ export function useStorageService() {
 }
 
 /**
+ * Hook to access Database
+ */
+export function useDatabase() {
+  const { db } = useServices();
+  return db;
+}
+
+/**
  * Hook to access PasswordService
  */
 export function usePasswordService() {
@@ -116,9 +182,10 @@ export function useEncryptionService() {
 }
 
 /**
- * Hook to access Database
+ * Hook to access service re-initialization function
+ * Use this after critical changes like setting up master password
  */
-export function useDatabase() {
-  const { db } = useServices();
-  return db;
+export function useReinitializeServices() {
+  const { reinitialize } = useServices();
+  return reinitialize;
 }

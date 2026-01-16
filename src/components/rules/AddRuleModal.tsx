@@ -140,9 +140,16 @@ export function AddRuleModal({
     value: profile.id,
   }));
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey && !loading) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <DialogTitle>Add New Rule</DialogTitle>
           <DialogDescription>

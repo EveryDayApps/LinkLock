@@ -1,14 +1,7 @@
 import { useAuthManager } from "@/services/core";
-import {
-  Check,
-  Eye,
-  EyeOff,
-  Key,
-  Lock,
-  Shield,
-  User as UserIcon,
-} from "lucide-react";
+import { Check, Eye, EyeOff, Key, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { MasterPasswordSetup } from "../components/MasterPasswordSetup";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -19,18 +12,13 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Skeleton } from "../components/ui/skeleton";
 
 export function SettingsScreen() {
   const authManager = useAuthManager();
   const [hasMasterPassword, setHasMasterPassword] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Form states
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Change password states
   const [oldPassword, setOldPassword] = useState("");
@@ -63,40 +51,13 @@ export function SettingsScreen() {
     checkMasterPassword();
   }, [authManager]);
 
-  const handleSetupPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    // Validation
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
-      return;
+  const handlePasswordSetupSuccess = async () => {
+    const hasPassword = await authManager.hasMasterPassword();
+    setHasMasterPassword(hasPassword);
+    if (hasPassword) {
+      const userIdValue = await authManager.getUserId();
+      setUserId(userIdValue);
     }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const result = await authManager.setupMasterPassword(password);
-
-    if (result.success) {
-      setSuccess("Master password set successfully!");
-      setPassword("");
-      setConfirmPassword("");
-      setUserId(result.userId || null);
-      setHasMasterPassword(true);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(""), 3000);
-    } else {
-      setError(result.error || "Failed to set master password");
-    }
-
-    setIsSubmitting(false);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -139,8 +100,54 @@ export function SettingsScreen() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading settings...</p>
+      <div className="p-8">
+        <div className="mb-8 space-y-2">
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-5 w-80" />
+        </div>
+        <div className="max-w-2xl space-y-6">
+          {/* User Info Card Skeleton */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-6 w-36" />
+              </div>
+              <Skeleton className="h-4 w-44 mt-1" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-6 w-48 rounded" />
+              </div>
+            </CardContent>
+          </Card>
+          {/* Password Card Skeleton */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-6 w-48" />
+              </div>
+              <Skeleton className="h-4 w-72 mt-1" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+              <Skeleton className="h-10 w-full rounded-md" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -180,100 +187,7 @@ export function SettingsScreen() {
 
         {/* Master Password Setup */}
         {!hasMasterPassword ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Set Master Password
-              </CardTitle>
-              <CardDescription>
-                Create a secure master password to protect your data. This
-                password will be used to encrypt all your profiles and rules.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSetupPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Master Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter master password"
-                      disabled={isSubmitting}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Minimum 8 characters
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm master password"
-                      disabled={isSubmitting}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {success && (
-                  <div className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2">
-                    <Check className="w-4 h-4" />
-                    {success}
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full"
-                >
-                  <Lock className="w-4 h-4 mr-2" />
-                  {isSubmitting ? "Setting up..." : "Set Master Password"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <MasterPasswordSetup onSuccess={handlePasswordSetupSuccess} />
         ) : (
           <Card>
             <CardHeader>

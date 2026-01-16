@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { Skeleton } from "../ui/skeleton";
 import { CreateProfileModal } from "./CreateProfileModal";
 import { EditProfileModal } from "./EditProfileModal";
 
@@ -28,17 +29,6 @@ export function ProfilesTab() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
 
-  useEffect(() => {
-    initializeProfiles();
-  }, []);
-
-  const initializeProfiles = async () => {
-    const tempPassword = "temp-password-hash";
-    await profileManager.initialize(tempPassword);
-    loadProfiles();
-    setIsInitialized(true);
-  };
-
   const loadProfiles = async () => {
     const allProfiles = await profileManager.getAllProfiles();
     setProfiles(allProfiles);
@@ -46,6 +36,40 @@ export function ProfilesTab() {
     const activeProfile = await profileManager.getActiveProfile();
     setActiveProfileId(activeProfile?.id || null);
   };
+
+  useEffect(() => {
+    const initializeProfiles = async () => {
+      try {
+        await profileManager.initialize();
+        await loadProfiles();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("[ProfilesTab] Failed to initialize:", error);
+      }
+    };
+
+    initializeProfiles();
+  }, [profileManager]);
+
+  // Keyboard shortcut: Shift+P to open Create Profile modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Shift+P and ensure no input/textarea is focused
+      if (
+        event.shiftKey &&
+        event.key === "P" &&
+        !["INPUT", "TEXTAREA"].includes(
+          (event.target as HTMLElement).tagName
+        )
+      ) {
+        event.preventDefault();
+        setCreateModalOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleCreateProfile = async (
     name: string
@@ -102,8 +126,36 @@ export function ProfilesTab() {
 
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-400">Loading profiles...</p>
+      <div className="p-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-5 w-80" />
+          </div>
+          <Skeleton className="h-10 w-32 rounded-md" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="flex items-center justify-center">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="w-10 h-10 rounded-lg" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-8 w-16 rounded-md" />
+                    <Skeleton className="h-8 w-14 rounded-md" />
+                    <Skeleton className="h-8 w-16 rounded-md" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -120,6 +172,9 @@ export function ProfilesTab() {
         <Button onClick={() => setCreateModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           New Profile
+          <kbd className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-primary-foreground/20 rounded">
+            Shift+P
+          </kbd>
         </Button>
       </div>
 
