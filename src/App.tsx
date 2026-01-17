@@ -4,7 +4,7 @@ import { useState } from "react";
 import { MasterPasswordGuard } from "./components/MasterPasswordGuard";
 import { AboutScreen } from "./screens/AboutScreen";
 import { ImportExportScreen } from "./screens/ImportExportScreen";
-import { ProfilesScreen } from "./screens/ProfilesScreen";
+import { ProfilesTab } from "./screens/ProfilesScreen";
 import { RulesScreen } from "./screens/RulesScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 
@@ -48,7 +48,7 @@ function App() {
       case "rules":
         return <RulesScreen key={`rules-${refreshKey}`} />;
       case "profiles":
-        return <ProfilesScreen key={`profiles-${refreshKey}`} />;
+        return <ProfilesTab key={`profiles-${refreshKey}`} />;
       case "import-export":
         return <ImportExportScreen onImportSuccess={handleImportSuccess} />;
       case "settings":

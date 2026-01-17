@@ -237,7 +237,7 @@ export function RulesScreen() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 w-[55vw]">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Rules</h2>

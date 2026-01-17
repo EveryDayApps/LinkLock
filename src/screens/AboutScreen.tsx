@@ -57,7 +57,7 @@ export function AboutScreen() {
         <p className="text-muted-foreground mt-2">Version 1.0.0</p>
       </motion.div>
 
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-3xl space-y-6">
         <motion.div
           className="bg-card border border-border rounded-lg p-6"
           variants={itemVariants}
@@ -70,8 +70,8 @@ export function AboutScreen() {
           <p className="text-muted-foreground leading-relaxed">
             Link Lock is a browser extension that helps you manage your browsing
             experience by allowing you to lock, block, or redirect specific
-            websites. Create different profiles for different contexts like Work,
-            Focus, or Personal browsing.
+            websites. Create different profiles for different contexts like
+            Work, Focus, or Personal browsing.
           </p>
         </motion.div>
 
@@ -79,7 +79,9 @@ export function AboutScreen() {
           className="bg-card border border-border rounded-lg p-6"
           variants={itemVariants}
         >
-          <h2 className="text-xl font-semibold text-foreground mb-3">Features</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-3">
+            Features
+          </h2>
           <motion.ul
             className="space-y-2 text-muted-foreground"
             variants={containerVariants}
@@ -98,7 +100,12 @@ export function AboutScreen() {
                   className="text-primary mr-2"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.1 + index * 0.04, type: "spring", stiffness: 350, damping: 20 }}
+                  transition={{
+                    delay: 0.1 + index * 0.04,
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 20,
+                  }}
                 >
                   ✓
                 </motion.span>
@@ -114,7 +121,9 @@ export function AboutScreen() {
           whileHover={{ scale: 1.01 }}
           transition={{ type: "spring", stiffness: 250, damping: 20 }}
         >
-          <h2 className="text-xl font-semibold text-foreground mb-3">Privacy</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-3">
+            Privacy
+          </h2>
           <p className="text-muted-foreground leading-relaxed">
             All your data is stored locally on your device using AES-GCM
             encryption. We never send your data to external servers. Your
@@ -128,7 +137,9 @@ export function AboutScreen() {
           whileHover={{ scale: 1.01 }}
           transition={{ type: "spring", stiffness: 250, damping: 20 }}
         >
-          <h2 className="text-xl font-semibold text-foreground mb-3">Support</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-3">
+            Support
+          </h2>
           <p className="text-muted-foreground leading-relaxed mb-3">
             Need help or found a bug?
           </p>
