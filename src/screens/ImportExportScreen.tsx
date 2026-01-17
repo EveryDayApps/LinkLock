@@ -1,4 +1,4 @@
-import { ExportModal, ImportModal } from "@/components/import-export";
+import { ExportModal, ImportModal } from "@/components/backup";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -126,7 +126,7 @@ export function ImportExportScreen({
       if (options.importProfiles && importedProfiles) {
         // Filter out the default profile - it should never be imported
         const profilesToImport = importedProfiles.filter(
-          (p) => p.id !== "default"
+          (p) => p.id !== "default",
         );
 
         if (options.mergeStrategy === "replace") {
@@ -159,7 +159,7 @@ export function ImportExportScreen({
           // Merge mode: check if combined count exceeds limit
           const existingCount = profiles.length;
           const newProfiles = profilesToImport.filter(
-            (p) => !profiles.some((ep) => ep.id === p.id)
+            (p) => !profiles.some((ep) => ep.id === p.id),
           );
           if (existingCount + newProfiles.length > MAX_PROFILES) {
             return {
