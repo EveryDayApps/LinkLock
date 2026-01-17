@@ -22,9 +22,7 @@ export class ProfileManager {
    */
   async initialize(): Promise<void> {
     // If already initialized, return
-    if (this.isInitialized) {
-      return;
-    }
+    if (this.isInitialized) return;
 
     // If initialization is in progress, wait for it to complete
     if (this.initPromise) {
@@ -46,14 +44,12 @@ export class ProfileManager {
       throw new Error("Master password hash not available");
     }
 
-    this.db.setMasterPassword(masterPasswordHash);
-
     try {
       const encryptedProfiles = await this.db.profiles.toArray();
       console.log(
         "[ProfileManager] Found",
         encryptedProfiles.length,
-        "encrypted profiles"
+        "encrypted profiles",
       );
 
       if (encryptedProfiles.length === 0) {
@@ -62,7 +58,7 @@ export class ProfileManager {
       } else {
         // Decrypt profiles to find active one
         const profiles = await Promise.all(
-          encryptedProfiles.map((ep) => this.db.decryptProfile(ep))
+          encryptedProfiles.map((ep) => this.db.decryptProfile(ep)),
         );
         console.log(
           "[ProfileManager] Decrypted profiles:",
@@ -70,20 +66,20 @@ export class ProfileManager {
             id: p.id,
             name: p.name,
             isActive: p.isActive,
-          }))
+          })),
         );
 
         // Check if default profile exists
         const hasDefault = profiles.some((p) => p.id === "default");
         if (!hasDefault) {
           console.log(
-            "[ProfileManager] Default profile missing, creating it..."
+            "[ProfileManager] Default profile missing, creating it...",
           );
           await this.createDefaultProfile();
           // Reload profiles
           const updatedEncrypted = await this.db.profiles.toArray();
           const updatedProfiles = await Promise.all(
-            updatedEncrypted.map((ep) => this.db.decryptProfile(ep))
+            updatedEncrypted.map((ep) => this.db.decryptProfile(ep)),
           );
           const activeProfile = updatedProfiles.find((p) => p.isActive);
           this.activeProfileId = activeProfile?.id || null;
@@ -101,7 +97,7 @@ export class ProfileManager {
       this.isInitialized = true;
       console.log(
         "[ProfileManager] Initialization complete. Active profile ID:",
-        this.activeProfileId
+        this.activeProfileId,
       );
     }
   }
@@ -124,7 +120,7 @@ export class ProfileManager {
     this.activeProfileId = profile.id;
     console.log(
       "[ProfileManager] Default profile created successfully with ID:",
-      profile.id
+      profile.id,
     );
 
     // add in db
@@ -136,7 +132,7 @@ export class ProfileManager {
   async getActiveProfile(): Promise<Profile | null> {
     if (!this.isInitialized) {
       console.warn(
-        "[ProfileManager] getActiveProfile called before initialization"
+        "[ProfileManager] getActiveProfile called before initialization",
       );
       return null;
     }
@@ -146,7 +142,7 @@ export class ProfileManager {
     }
     console.log(
       "[ProfileManager] Getting active profile:",
-      this.activeProfileId
+      this.activeProfileId,
     );
     const encrypted = await this.db.profiles.get(this.activeProfileId);
     if (!encrypted) {
@@ -165,13 +161,13 @@ export class ProfileManager {
   async getAllProfiles(): Promise<Profile[]> {
     if (!this.isInitialized) {
       console.warn(
-        "[ProfileManager] getAllProfiles called before initialization, returning empty array"
+        "[ProfileManager] getAllProfiles called before initialization, returning empty array",
       );
       return [];
     }
     const encryptedProfiles = await this.db.profiles.toArray();
     return await Promise.all(
-      encryptedProfiles.map((ep) => this.db.decryptProfile(ep))
+      encryptedProfiles.map((ep) => this.db.decryptProfile(ep)),
     );
   }
 
@@ -179,7 +175,7 @@ export class ProfileManager {
    * Get all profiles with rule counts
    */
   async getAllProfilesWithCounts(
-    ruleCountMap: Map<string, number>
+    ruleCountMap: Map<string, number>,
   ): Promise<ProfileWithRuleCount[]> {
     const profiles = await this.getAllProfiles();
     return profiles.map((profile) => ({
@@ -202,7 +198,7 @@ export class ProfileManager {
    */
   async createProfile(
     name: string,
-    _copyRulesFromProfileId?: string
+    _copyRulesFromProfileId?: string,
   ): Promise<{ success: boolean; profileId?: string; error?: string }> {
     if (!name.trim()) {
       return { success: false, error: "Profile name cannot be empty" };
@@ -211,7 +207,7 @@ export class ProfileManager {
     // Decrypt all profiles to check for duplicates
     const allProfiles = await this.getAllProfiles();
     const existingProfile = allProfiles.find(
-      (p) => p.name.toLowerCase() === name.toLowerCase()
+      (p) => p.name.toLowerCase() === name.toLowerCase(),
     );
 
     if (existingProfile) {
@@ -238,7 +234,7 @@ export class ProfileManager {
    */
   async updateProfile(
     profileId: string,
-    name: string
+    name: string,
   ): Promise<{ success: boolean; error?: string }> {
     if (!name.trim()) {
       return { success: false, error: "Profile name cannot be empty" };
@@ -247,7 +243,7 @@ export class ProfileManager {
     // Decrypt all profiles to check for duplicates
     const allProfiles = await this.getAllProfiles();
     const existingProfile = allProfiles.find(
-      (p) => p.id !== profileId && p.name.toLowerCase() === name.toLowerCase()
+      (p) => p.id !== profileId && p.name.toLowerCase() === name.toLowerCase(),
     );
 
     if (existingProfile) {
@@ -274,7 +270,7 @@ export class ProfileManager {
    * Switch to a different profile
    */
   async switchProfile(
-    profileId: string
+    profileId: string,
   ): Promise<{ success: boolean; error?: string }> {
     const profile = await this.getProfile(profileId);
     if (!profile) {
@@ -304,7 +300,7 @@ export class ProfileManager {
    * Delete a profile
    */
   async deleteProfile(
-    profileId: string
+    profileId: string,
   ): Promise<{ success: boolean; error?: string }> {
     if (profileId === this.activeProfileId) {
       return {

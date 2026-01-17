@@ -4,53 +4,16 @@
 // ============================================
 import Dexie, { type EntityTable } from "dexie";
 import type { LinkRule, Profile } from "../models/interfaces";
+import type {
+  DBChangeCallback,
+  DBChangeEvent,
+  EncryptedProfile,
+  EncryptedRule,
+  MasterPasswordData,
+  StoredRule,
+} from "../models/types";
+import { notifyDbChange } from "../utils/browser_utils";
 import { EncryptionService } from "./encryption";
-
-// Types for encrypted storage
-interface EncryptedProfile {
-  id: string;
-  encryptedData: string;
-  iv: string;
-}
-
-interface EncryptedRule {
-  id: string;
-  encryptedData: string;
-  iv: string;
-  profileIds: string[]; // Keep for indexing
-}
-
-// Type for rule storage with optional encryption (for debugging)
-export interface StoredRule {
-  id: string;
-  data: string; // JSON stringified rule data
-  profileIds: string[]; // Keep for indexing
-  encrypted: boolean; // Flag to indicate if data is encrypted
-  iv?: string; // Only present if encrypted
-}
-
-export interface MasterPasswordData {
-  id: string; // Always "master" for singleton
-  userId: string;
-  encryptedPasswordHash: string;
-  salt: string;
-  iv: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-// Listener types for database changes
-export type ChangeType = "create" | "update" | "delete";
-
-export interface DBChangeEvent<T> {
-  type: ChangeType;
-  table: string;
-  key: string;
-  newValue?: T;
-  oldValue?: T;
-}
-
-export type DBChangeCallback<T> = (event: DBChangeEvent<T>) => void;
 
 // Define the database schema
 export class LinkLockDatabase extends Dexie {
@@ -116,7 +79,7 @@ export class LinkLockDatabase extends Dexie {
     } catch (error) {
       console.error(
         "[DB] Error loading master password from IndexedDB:",
-        error
+        error,
       );
     }
   }
@@ -191,7 +154,7 @@ export class LinkLockDatabase extends Dexie {
 
     const { encrypted, iv } = await this.encryptionService.encrypt(
       JSON.stringify(profile),
-      this.masterPasswordHash
+      this.masterPasswordHash,
     );
 
     return {
@@ -211,14 +174,14 @@ export class LinkLockDatabase extends Dexie {
 
     console.log(
       "[DB] Decrypting profile with hash:",
-      this.masterPasswordHash.substring(0, 10) + "..."
+      this.masterPasswordHash.substring(0, 10) + "...",
     );
     console.log("[DB] Profile ID:", encryptedProfile.id);
 
     const decrypted = await this.encryptionService.decrypt(
       encryptedProfile.encryptedData,
       encryptedProfile.iv,
-      this.masterPasswordHash
+      this.masterPasswordHash,
     );
 
     return JSON.parse(decrypted) as Profile;
@@ -231,7 +194,7 @@ export class LinkLockDatabase extends Dexie {
    */
   async storeRule(
     rule: LinkRule,
-    encrypt: boolean = true
+    encrypt: boolean = true,
   ): Promise<StoredRule> {
     if (encrypt) {
       if (!this.masterPasswordHash) {
@@ -240,7 +203,7 @@ export class LinkLockDatabase extends Dexie {
 
       const { encrypted, iv } = await this.encryptionService.encrypt(
         JSON.stringify(rule),
-        this.masterPasswordHash
+        this.masterPasswordHash,
       );
 
       return {
@@ -278,7 +241,7 @@ export class LinkLockDatabase extends Dexie {
       const decrypted = await this.encryptionService.decrypt(
         storedRule.data,
         storedRule.iv,
-        this.masterPasswordHash
+        this.masterPasswordHash,
       );
 
       return JSON.parse(decrypted) as LinkRule;
@@ -299,7 +262,7 @@ export class LinkLockDatabase extends Dexie {
 
     const { encrypted, iv } = await this.encryptionService.encrypt(
       JSON.stringify(rule),
-      this.masterPasswordHash
+      this.masterPasswordHash,
     );
 
     return {
@@ -322,7 +285,7 @@ export class LinkLockDatabase extends Dexie {
     const decrypted = await this.encryptionService.decrypt(
       encryptedRule.encryptedData,
       encryptedRule.iv,
-      this.masterPasswordHash
+      this.masterPasswordHash,
     );
 
     return JSON.parse(decrypted) as LinkRule;
@@ -339,7 +302,7 @@ export class LinkLockDatabase extends Dexie {
    * @returns Unsubscribe function
    */
   onMasterPasswordHashChange(
-    callback: (hash: string | null) => void
+    callback: (hash: string | null) => void,
   ): () => void {
     this.masterPasswordHashListeners.add(callback);
     return () => this.masterPasswordHashListeners.delete(callback);
@@ -371,7 +334,7 @@ export class LinkLockDatabase extends Dexie {
    * @returns Unsubscribe function
    */
   onMasterPasswordChange(
-    callback: DBChangeCallback<MasterPasswordData>
+    callback: DBChangeCallback<MasterPasswordData>,
   ): () => void {
     this.masterPasswordListeners.add(callback);
     return () => this.masterPasswordListeners.delete(callback);
@@ -382,7 +345,7 @@ export class LinkLockDatabase extends Dexie {
    */
   private notifyListeners<T>(
     listeners: Set<DBChangeCallback<T>>,
-    event: DBChangeEvent<T>
+    event: DBChangeEvent<T>,
   ): void {
     listeners.forEach((callback) => {
       try {
@@ -405,6 +368,11 @@ export class LinkLockDatabase extends Dexie {
         key: primKey as string,
         newValue: obj,
       });
+      notifyDbChange({
+        table: "profiles",
+        type: "add",
+        key: primKey as string,
+      });
     });
 
     this.profiles.hook("updating", (modifications, primKey, obj) => {
@@ -415,6 +383,11 @@ export class LinkLockDatabase extends Dexie {
         oldValue: obj,
         newValue: { ...obj, ...modifications } as EncryptedProfile,
       });
+      notifyDbChange({
+        table: "profiles",
+        type: "update",
+        key: primKey as string,
+      });
     });
 
     this.profiles.hook("deleting", (primKey, obj) => {
@@ -423,6 +396,11 @@ export class LinkLockDatabase extends Dexie {
         table: "profiles",
         key: primKey as string,
         oldValue: obj,
+      });
+      notifyDbChange({
+        table: "profiles",
+        type: "delete",
+        key: primKey as string,
       });
     });
 
@@ -434,6 +412,7 @@ export class LinkLockDatabase extends Dexie {
         key: primKey as string,
         newValue: obj,
       });
+      notifyDbChange({ table: "rules", type: "add", key: primKey as string });
     });
 
     this.rules.hook("updating", (modifications, primKey, obj) => {
@@ -444,6 +423,11 @@ export class LinkLockDatabase extends Dexie {
         oldValue: obj,
         newValue: { ...obj, ...modifications } as StoredRule,
       });
+      notifyDbChange({
+        table: "rules",
+        type: "update",
+        key: primKey as string,
+      });
     });
 
     this.rules.hook("deleting", (primKey, obj) => {
@@ -452,6 +436,11 @@ export class LinkLockDatabase extends Dexie {
         table: "rules",
         key: primKey as string,
         oldValue: obj,
+      });
+      notifyDbChange({
+        table: "rules",
+        type: "delete",
+        key: primKey as string,
       });
     });
 
@@ -463,6 +452,11 @@ export class LinkLockDatabase extends Dexie {
         key: primKey as string,
         newValue: obj,
       });
+      notifyDbChange({
+        table: "masterPassword",
+        type: "add",
+        key: primKey as string,
+      });
     });
 
     this.masterPassword.hook("updating", (modifications, primKey, obj) => {
@@ -473,6 +467,11 @@ export class LinkLockDatabase extends Dexie {
         oldValue: obj,
         newValue: { ...obj, ...modifications } as MasterPasswordData,
       });
+      notifyDbChange({
+        table: "masterPassword",
+        type: "update",
+        key: primKey as string,
+      });
     });
 
     this.masterPassword.hook("deleting", (primKey, obj) => {
@@ -481,6 +480,11 @@ export class LinkLockDatabase extends Dexie {
         table: "masterPassword",
         key: primKey as string,
         oldValue: obj,
+      });
+      notifyDbChange({
+        table: "masterPassword",
+        type: "delete",
+        key: primKey as string,
       });
     });
   }

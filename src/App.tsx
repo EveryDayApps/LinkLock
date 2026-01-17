@@ -8,21 +8,15 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MasterPasswordGuard } from "./components/MasterPasswordGuard";
 import { Sheet, SheetContent } from "./components/ui/sheet";
+import type { ScreenType } from "./models/types";
 import { AboutScreen } from "./screens/AboutScreen";
 import { ImportExportScreen } from "./screens/ImportExportScreen";
 import { ProfilesTab } from "./screens/ProfilesScreen";
 import { RulesScreen } from "./screens/RulesScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
-
-export type ScreenType =
-  | "profiles"
-  | "rules"
-  | "import-export"
-  | "settings"
-  | "about";
 
 const navItems = [
   { id: "rules" as const, label: "Rules", icon: FileText },
@@ -51,6 +45,31 @@ function App() {
     // Increment key to force all screens to remount and reload data
     setRefreshKey((prev) => prev + 1);
   };
+
+  // Keyboard shortcuts: Shift+1 through Shift+5
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const key = e.key;
+        const shortcuts: Record<string, ScreenType> = {
+          "!": "rules", // Shift+1
+          "@": "profiles", // Shift+2
+          "#": "import-export", // Shift+3
+          $: "settings", // Shift+4
+          "%": "about", // Shift+5
+        };
+
+        if (shortcuts[key]) {
+          e.preventDefault();
+          setCurrentScreen(shortcuts[key]);
+          setIsSidebarOpen(false);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const renderScreen = () => {
     switch (currentScreen) {

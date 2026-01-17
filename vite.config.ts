@@ -14,9 +14,22 @@ export default defineConfig(({ mode }): UserConfig => {
       }),
     ],
 
+    define: {
+      __IS_EXTENSION__: isExtension,
+    },
+
     resolve: {
       alias: {
         "@": resolve(__dirname, "src"),
+        // In dev mode, alias webextension-polyfill-ts to our mock
+        ...(isExtension
+          ? {}
+          : {
+              "webextension-polyfill-ts": resolve(
+                __dirname,
+                "src/utils/browser-polyfill-mock.ts",
+              ),
+            }),
       },
     },
 

@@ -4,9 +4,15 @@
 // ============================================
 
 import type { LinkRule, Profile } from "../models/interfaces";
+import type {
+  ExportFile,
+  ExportOptions,
+  ExportPayload,
+  ParseResult,
+} from "../models/types";
 
 // ============================================
-// Export Format Types
+// Export Format Constants
 // ============================================
 
 /**
@@ -20,92 +26,6 @@ export const EXPORT_FORMAT_VERSION = "1.0";
  * Add older versions here when implementing migrations
  */
 export const SUPPORTED_FORMAT_VERSIONS = ["1.0"];
-
-/**
- * Options for what to include in export
- */
-export interface ExportOptions {
-  includeProfiles: boolean;
-  includeRules: boolean;
-}
-
-/**
- * Options for what to import
- */
-export interface ImportOptions {
-  importProfiles: boolean;
-  importRules: boolean;
-  mergeStrategy: "replace" | "merge";
-}
-
-/**
- * Metadata visible without decryption
- * Safe for display in UI before password entry
- */
-export interface ExportMetadata {
-  profileCount: number;
-  ruleCount: number;
-  includesProfiles: boolean;
-  includesRules: boolean;
-}
-
-/**
- * Encryption parameters stored in export
- */
-export interface ExportEncryption {
-  algorithm: "AES-GCM";
-  keyDerivation: "PBKDF2";
-  iterations: number;
-  hash: "SHA-256";
-  salt: string; // Base64 encoded
-  iv: string; // Base64 encoded
-}
-
-/**
- * The complete export file format
- */
-export interface ExportFile {
-  formatVersion: string;
-  appVersion: string;
-  exportedAt: string;
-  exportId: string;
-  metadata: ExportMetadata;
-  encryption: ExportEncryption;
-  payload: string; // Base64 encoded encrypted data
-  checksum: string; // SHA-256 hash of decrypted payload for integrity
-}
-
-/**
- * Decrypted payload structure
- */
-export interface ExportPayload {
-  profiles?: Profile[];
-  rules?: LinkRule[];
-}
-
-/**
- * Result of parsing/validating an export file
- */
-export interface ParseResult {
-  valid: boolean;
-  error?: string;
-  metadata?: ExportMetadata;
-  formatVersion?: string;
-  exportedAt?: string;
-  needsMigration?: boolean;
-}
-
-/**
- * Result of import operation
- */
-export interface ImportResult {
-  success: boolean;
-  error?: string;
-  imported?: {
-    profiles: number;
-    rules: number;
-  };
-}
 
 // ============================================
 // Export/Import Manager
@@ -132,7 +52,7 @@ export class ExportImportManager {
     masterPassword: string,
     profiles: Profile[],
     rules: LinkRule[],
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<{ success: boolean; data?: ExportFile; error?: string }> {
     try {
       // Generate unique export ID
@@ -168,7 +88,7 @@ export class ExportImportManager {
       const encryptedPayload = await crypto.subtle.encrypt(
         { name: "AES-GCM", iv },
         exportKey,
-        encoder.encode(payloadString)
+        encoder.encode(payloadString),
       );
 
       // Build export file
@@ -282,13 +202,13 @@ export class ExportImportManager {
    */
   async decryptExport(
     exportFile: ExportFile,
-    masterPassword: string
+    masterPassword: string,
   ): Promise<{ success: boolean; data?: ExportPayload; error?: string }> {
     try {
       // Derive key using the salt from the export file
       const exportKey = await this.deriveExportKey(
         masterPassword,
-        exportFile.encryption.salt
+        exportFile.encryption.salt,
       );
 
       // Decrypt payload
@@ -298,7 +218,7 @@ export class ExportImportManager {
       const decryptedBuffer = await crypto.subtle.decrypt(
         { name: "AES-GCM", iv },
         exportKey,
-        encryptedData
+        encryptedData,
       );
 
       const decoder = new TextDecoder();
@@ -350,7 +270,7 @@ export class ExportImportManager {
    */
   private async deriveExportKey(
     password: string,
-    salt: string
+    salt: string,
   ): Promise<CryptoKey> {
     const encoder = new TextEncoder();
 
@@ -360,7 +280,7 @@ export class ExportImportManager {
       encoder.encode(password),
       { name: "PBKDF2" },
       false,
-      ["deriveBits", "deriveKey"]
+      ["deriveBits", "deriveKey"],
     );
 
     // Derive actual encryption key
@@ -374,7 +294,7 @@ export class ExportImportManager {
       keyMaterial,
       { name: "AES-GCM", length: 256 },
       false,
-      ["encrypt", "decrypt"]
+      ["encrypt", "decrypt"],
     );
   }
 
@@ -385,7 +305,7 @@ export class ExportImportManager {
     const encoder = new TextEncoder();
     const hashBuffer = await crypto.subtle.digest(
       "SHA-256",
-      encoder.encode(data)
+      encoder.encode(data),
     );
     return this.arrayBufferToBase64(hashBuffer);
   }
