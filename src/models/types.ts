@@ -4,7 +4,7 @@
 // ============================================
 
 import type { AuthManager } from "../services/authManager";
-import type { LinkLockDatabase } from "../services/db";
+import type { LinkLockDatabase } from "../services/database/db";
 import type { EncryptionService } from "../services/encryption";
 import type { PasswordService } from "../services/passwordService";
 import type { ProfileManager } from "../services/profileManager";

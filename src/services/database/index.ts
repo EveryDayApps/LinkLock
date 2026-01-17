@@ -6,6 +6,5 @@ export {
   BaseEncryptedDatabase,
   type IEncryptedObservableDatabase,
   type IObservableDatabase,
-  type ISubscribable
-} from "./BaseDatabase";
-
+  type ISubscribable,
+} from "./base_db";

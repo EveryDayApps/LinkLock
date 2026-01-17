@@ -3,7 +3,7 @@
 // Handles all profile-related operations using Dexie.js with encryption
 // ============================================
 import type { Profile, ProfileWithRuleCount } from "../models/interfaces";
-import type { LinkLockDatabase } from "./db";
+import type { LinkLockDatabase } from "./database/db";
 
 export class ProfileManager {
   private db: LinkLockDatabase;

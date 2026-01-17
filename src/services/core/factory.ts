@@ -4,7 +4,7 @@
 // ============================================
 
 import { AuthManager } from "../authManager";
-import { LinkLockDatabase } from "../db";
+import { LinkLockDatabase } from "../database/db";
 import { EncryptionService } from "../encryption";
 import { PasswordService } from "../passwordService";
 import { ProfileManager } from "../profileManager";

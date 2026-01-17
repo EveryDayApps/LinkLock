@@ -4,52 +4,51 @@
 // ============================================
 import { LinkLockIndexedDBName } from "@/models/constants";
 import Dexie, { type EntityTable } from "dexie";
-import type { LinkRule, Profile } from "../models/interfaces";
+import type { IEncryptedObservableDatabase } from ".";
+import type { LinkRule, Profile } from "../../models/interfaces";
 import type {
   DBChangeCallback,
   DBChangeEvent,
   EncryptedProfile,
   MasterPasswordData,
   StoredRule,
-} from "../models/types";
-import type { IEncryptedObservableDatabase } from "./database";
-import { EncryptionService } from "./encryption";
-import { DatabaseListenerManager } from "./listenerManager";
-import { dbLogger } from "./logger";
+} from "../../models/types";
+import { EncryptionService } from "../encryption";
+import { DatabaseListenerManager } from "../listenerManager";
+import { dbLogger } from "../logger";
 
 // Define the database schema
 export class LinkLockDatabase
   extends Dexie
   implements
-  IEncryptedObservableDatabase<
-    Profile,
-    EncryptedProfile,
-    LinkRule,
-    StoredRule,
-    MasterPasswordData,
-    DBChangeEvent<unknown>
-  > {
+    IEncryptedObservableDatabase<
+      Profile,
+      EncryptedProfile,
+      LinkRule,
+      StoredRule,
+      MasterPasswordData,
+      DBChangeEvent<unknown>
+    >
+{
   profiles!: EntityTable<EncryptedProfile, "id">;
   rules!: EntityTable<StoredRule, "id">;
   masterPassword!: EntityTable<MasterPasswordData, "id">;
 
-  private encryptionService: EncryptionService;
   private masterPasswordHash: string | null = null;
 
+  // Services
   // Centralized listener management
+  private encryptionService = new EncryptionService();
   private listenerManager = new DatabaseListenerManager();
 
   constructor() {
     super(LinkLockIndexedDBName);
 
-    // Version 3: Added master password storage
     this.version(1).stores({
       profiles: "id",
       rules: "id, *profileIds",
       masterPassword: "id",
     });
-
-    this.encryptionService = new EncryptionService();
 
     // Set up change listeners for all tables
     this.listenerManager.setupDexieHooks(
@@ -76,10 +75,7 @@ export class LinkLockDatabase
         this.masterPasswordHash = masterPasswordData.encryptedPasswordHash;
       }
     } catch (error) {
-      dbLogger.error(
-        "Error loading master password from IndexedDB:",
-        error,
-      );
+      dbLogger.error("Error loading master password from IndexedDB:", error);
     }
   }
 

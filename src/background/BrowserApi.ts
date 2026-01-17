@@ -24,18 +24,6 @@ export class BrowserApi extends BaseBrowserApi {
     });
   }
 
-  // private createBrowserApi(): BaseBrowserApi {
-  //   const browserType = detectBrowser();
-  //   switch (browserType) {
-  //     case "chrome":
-  //       return new ChromeBrowserApi();
-  //     case "firefox":
-  //       return new FireFoxBrowserApi();
-  //     default:
-  //       throw new Error(`Unsupported browser: ${browserType}`);
-  //   }
-  // }
-
   /**
    * Initialize all services
    */
