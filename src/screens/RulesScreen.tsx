@@ -261,105 +261,120 @@ export function RulesScreen() {
         animate="visible"
       >
         <AnimatePresence>
-          {rules.map((rule) => (
+          {rules.map((rule, index) => (
             <motion.div
               key={rule.id}
               variants={itemVariants}
-              layout
+              custom={index}
+              initial="hidden"
+              animate="visible"
               exit="exit"
             >
-              <Card className={!rule.enabled ? "opacity-60" : ""}>
-                <CardContent className="flex items-center justify-center">
-                  <div className="flex items-center justify-between w-full p-2">
-                    <div className="flex items-center gap-4 flex-1">
-                      <motion.div
-                        className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {getActionIcon(rule.action)}
-                      </motion.div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-foreground">
-                            {rule.urlPattern}
-                          </h3>
-                          {!rule.enabled && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                              Disabled
-                            </span>
-                          )}
-                          {rule.applyToAllSubdomains && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
-                              All Subdomains
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                          <span className="capitalize">{rule.action}</span>
-                          {rule.action === "lock" && (
-                            <>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {getLockModeLabel(rule)}
+              <motion.div
+                whileHover={{ scale: 1.01, y: -2 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <Card
+                  className={
+                    !rule.enabled
+                      ? "opacity-60 transition-shadow hover:shadow-md"
+                      : "transition-shadow hover:shadow-md"
+                  }
+                >
+                  <CardContent className="flex items-center justify-center">
+                    <div className="flex items-center justify-between w-full p-2">
+                      <div className="flex items-center gap-4 flex-1">
+                        <motion.div
+                          className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          {getActionIcon(rule.action)}
+                        </motion.div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-foreground">
+                              {rule.urlPattern}
+                            </h3>
+                            {!rule.enabled && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+                                Disabled
                               </span>
-                            </>
-                          )}
-                          {rule.action === "redirect" &&
-                            rule.redirectOptions && (
+                            )}
+                            {rule.applyToAllSubdomains && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+                                All Subdomains
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                            <span className="capitalize">{rule.action}</span>
+                            {rule.action === "lock" && (
                               <>
                                 <span>•</span>
-                                <span className="truncate max-w-xs">
-                                  → {rule.redirectOptions.redirectUrl}
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {getLockModeLabel(rule)}
                                 </span>
                               </>
                             )}
-                          <span>•</span>
-                          <span>{getProfileNames(rule)}</span>
+                            {rule.action === "redirect" &&
+                              rule.redirectOptions && (
+                                <>
+                                  <span>•</span>
+                                  <span className="truncate max-w-xs">
+                                    → {rule.redirectOptions.redirectUrl}
+                                  </span>
+                                </>
+                              )}
+                            <span>•</span>
+                            <span>{getProfileNames(rule)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      <motion.div
-                        whileTap={{ scale: 0.92 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 20,
-                        }}
-                      >
-                        <Switch
-                          checked={rule.enabled}
-                          onCheckedChange={() => handleToggleRule(rule.id)}
-                        />
-                      </motion.div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditModal(rule)}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => openDeleteDialog(rule)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-2">
+                        <motion.div
+                          whileTap={{ scale: 0.92 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 20,
+                          }}
+                        >
+                          <Switch
+                            checked={rule.enabled}
+                            onCheckedChange={() => handleToggleRule(rule.id)}
+                          />
+                        </motion.div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => openEditModal(rule)}
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openDeleteDialog(rule)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </motion.div>
           ))}
         </AnimatePresence>

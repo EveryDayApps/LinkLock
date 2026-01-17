@@ -227,14 +227,16 @@ export function ProfilesTab() {
         animate="visible"
       >
         <AnimatePresence mode="popLayout">
-          {profiles.map((profile) => {
+          {profiles.map((profile, index) => {
             const isActive = profile.id === activeProfileId;
 
             return (
               <motion.div
                 key={profile.id}
                 variants={cardVariants}
-                layout
+                custom={index}
+                initial="hidden"
+                animate="visible"
                 exit="exit"
               >
                 <motion.div
@@ -251,7 +253,6 @@ export function ProfilesTab() {
                             }`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            layout
                           >
                             <User
                               className={`w-5 h-5 ${
