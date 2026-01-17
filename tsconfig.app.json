@@ -38,6 +38,7 @@
     "src/App.tsx",
     "dump/ChromeBrowserApi.ts",
     "dump/FireFoxBrowserApi.ts",
-    "dump/messageHandler.ts"
+    "dump/messageHandler.ts",
+    "dump/messaging.ts"
   ]
 }
