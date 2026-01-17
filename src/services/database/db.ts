@@ -13,9 +13,9 @@ import type {
   MasterPasswordData,
   StoredRule,
 } from "../../models/types";
+import { dbLogger } from "../../utils/logger";
 import { EncryptionService } from "../encryption";
-import { DatabaseListenerManager } from "../listenerManager";
-import { dbLogger } from "../logger";
+import { DatabaseListenerManager } from "../managers/listenerManager";
 
 // Define the database schema
 export class LinkLockDatabase

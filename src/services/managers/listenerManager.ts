@@ -3,15 +3,15 @@
 // Provides a reusable pattern for managing event listeners
 // ============================================
 
-import type { EntityTable } from "dexie";
 import type {
   DBChangeCallback,
   EncryptedProfile,
   MasterPasswordData,
   StoredRule,
-} from "../models/types";
-import { notifyDbChange } from "../utils/browser_utils";
-import { listenerLogger } from "./logger";
+} from "@/models/types";
+import { notifyDbChange } from "@/utils/browser_utils";
+import { listenerLogger } from "@/utils/logger";
+import type { EntityTable } from "dexie";
 
 /**
  * Generic listener manager class for managing event subscriptions
@@ -43,7 +43,9 @@ export class ListenerManager<T extends (...args: any[]) => void> {
   subscribe(callback: T): () => void {
     this.listeners.add(callback);
     if (this.debug) {
-      listenerLogger.debug(`[${this.name}] Listener added. Total: ${this.listeners.size}`);
+      listenerLogger.debug(
+        `[${this.name}] Listener added. Total: ${this.listeners.size}`,
+      );
     }
     return () => this.unsubscribe(callback);
   }
@@ -56,7 +58,9 @@ export class ListenerManager<T extends (...args: any[]) => void> {
   unsubscribe(callback: T): boolean {
     const deleted = this.listeners.delete(callback);
     if (this.debug && deleted) {
-      listenerLogger.debug(`[${this.name}] Listener removed. Total: ${this.listeners.size}`);
+      listenerLogger.debug(
+        `[${this.name}] Listener removed. Total: ${this.listeners.size}`,
+      );
     }
     return deleted;
   }
@@ -138,12 +142,17 @@ export interface DBChangeEventParam<T> {
  */
 export class DatabaseListenerManager {
   // Listeners for each table (IndexedDB changes)
-  private profileListeners = new DBChangeListenerManager<EncryptedProfile>("profiles");
+  private profileListeners = new DBChangeListenerManager<EncryptedProfile>(
+    "profiles",
+  );
   private ruleListeners = new DBChangeListenerManager<StoredRule>("rules");
-  private masterPasswordListeners = new DBChangeListenerManager<MasterPasswordData>("masterPassword");
+  private masterPasswordListeners =
+    new DBChangeListenerManager<MasterPasswordData>("masterPassword");
 
   // Listeners for in-memory master password hash changes
-  private masterPasswordHashListeners = new ListenerManager<(hash: string | null) => void>("MasterPasswordHash");
+  private masterPasswordHashListeners = new ListenerManager<
+    (hash: string | null) => void
+  >("MasterPasswordHash");
 
   // ============================================
   // Subscription Methods
@@ -228,7 +237,9 @@ export class DatabaseListenerManager {
   /**
    * Set up Dexie hooks for the profiles table
    */
-  private setupProfileHooks(profiles: EntityTable<EncryptedProfile, "id">): void {
+  private setupProfileHooks(
+    profiles: EntityTable<EncryptedProfile, "id">,
+  ): void {
     listenerLogger.debug("Setting up profile table hooks");
     profiles.hook("creating", (primKey, obj) => {
       listenerLogger.info(`Profile CREATED: ${primKey}`);
@@ -328,7 +339,9 @@ export class DatabaseListenerManager {
   /**
    * Set up Dexie hooks for the masterPassword table
    */
-  private setupMasterPasswordHooks(masterPassword: EntityTable<MasterPasswordData, "id">): void {
+  private setupMasterPasswordHooks(
+    masterPassword: EntityTable<MasterPasswordData, "id">,
+  ): void {
     listenerLogger.debug("Setting up masterPassword table hooks");
     masterPassword.hook("creating", (primKey, obj) => {
       listenerLogger.info(`MasterPassword CREATED: ${primKey}`);
@@ -389,4 +402,3 @@ export class DatabaseListenerManager {
     listenerLogger.debug("All listeners cleared");
   }
 }
-
