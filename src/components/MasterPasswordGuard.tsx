@@ -3,6 +3,7 @@ import {
   useDatabase,
   useReinitializeServices,
 } from "@/services/core";
+import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -41,7 +42,9 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
         return;
       }
 
-      // Password exists - unlock the app
+      // Password exists - user needs to verify it to unlock
+      // setAuthState("needs_verification");
+
       setAuthState("unlocked");
     };
 
@@ -64,11 +67,21 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
     setAuthState("unlocked");
   };
 
-  // Show loading state with skeleton : todo fix the flicker
+  // Show loading state with skeleton
   if (authState === "loading") return <InitializingScreen />;
 
-  // User is unlocked - render children
-  if (authState === "unlocked") return <>{children}</>;
+  // User is unlocked - render children with fade-in
+  if (authState === "unlocked") {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        {children}
+      </motion.div>
+    );
+  }
 
   // Show overlay for setup or verification
   return (
@@ -88,42 +101,77 @@ export function MasterPasswordGuard({ children }: MasterPasswordGuardProps) {
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+              <motion.div
+                className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
                 <Lock className="w-6 h-6 text-primary-foreground" />
-              </div>
-              {authState === "needs_setup"
-                ? "Welcome to Link Lock"
-                : "Unlock Link Lock"}
+              </motion.div>
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                {authState === "needs_setup"
+                  ? "Welcome to Link Lock"
+                  : "Unlock Link Lock"}
+              </motion.span>
             </DialogTitle>
             <DialogDescription className="text-left pt-2">
-              {authState === "needs_setup" ? (
-                <div className="flex items-start gap-2 bg-amber-500/10 text-amber-500 px-4 py-3 rounded-md text-sm">
-                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div>
-                    To start using Link Lock, you need to create a master
-                    password first. This password will encrypt and protect all
-                    your data.
-                  </div>
-                </div>
-              ) : (
-                <div className="text-muted-foreground text-sm">
-                  Enter your master password to unlock and access your protected
-                  links.
-                </div>
-              )}
+              <AnimatePresence mode="wait">
+                {authState === "needs_setup" ? (
+                  <motion.div
+                    key="setup-desc"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex items-start gap-2 bg-amber-500/10 text-amber-500 px-4 py-3 rounded-md text-sm"
+                  >
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <div>
+                      To start using Link Lock, you need to create a master
+                      password first. This password will encrypt and protect all
+                      your data.
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="verify-desc"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25 }}
+                    className="text-muted-foreground text-sm"
+                  >
+                    Enter your master password to unlock and access your
+                    protected links.
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </DialogDescription>
           </DialogHeader>
 
-          <div>
-            {authState === "needs_setup" ? (
-              <MasterPasswordSetup
-                onSuccess={handleSetupSuccess}
-                showAsCard={false}
-              />
-            ) : (
-              <MasterPasswordVerify onSuccess={handleVerifySuccess} />
-            )}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={authState}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
+            >
+              {authState === "needs_setup" ? (
+                <MasterPasswordSetup
+                  onSuccess={handleSetupSuccess}
+                  showAsCard={false}
+                />
+              ) : (
+                <MasterPasswordVerify onSuccess={handleVerifySuccess} />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </DialogContent>
       </Dialog>
     </>

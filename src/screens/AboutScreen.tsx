@@ -1,78 +1,156 @@
+import { motion } from "framer-motion";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+} as const;
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+};
+
+const featureVariants = {
+  hidden: { opacity: 0, x: -8 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+};
+
+const features = [
+  "Create and manage multiple profiles",
+  "Lock websites with password protection",
+  "Block distracting websites completely",
+  "Redirect URLs to alternative destinations",
+  "Encrypted local storage for security",
+];
+
 export function AboutScreen() {
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-100">About Link Lock</h1>
-        <p className="text-gray-400 mt-2">Version 1.0.0</p>
-      </div>
+    <motion.div
+      className="p-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div className="mb-6" variants={itemVariants}>
+        <h1 className="text-3xl font-bold text-foreground">About Link Lock</h1>
+        <p className="text-muted-foreground mt-2">Version 1.0.0</p>
+      </motion.div>
 
       <div className="max-w-2xl space-y-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-100 mb-3">
+        <motion.div
+          className="bg-card border border-border rounded-lg p-6"
+          variants={itemVariants}
+          whileHover={{ scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 250, damping: 20 }}
+        >
+          <h2 className="text-xl font-semibold text-foreground mb-3">
             What is Link Lock?
           </h2>
-          <p className="text-gray-400 leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed">
             Link Lock is a browser extension that helps you manage your browsing
             experience by allowing you to lock, block, or redirect specific
             websites. Create different profiles for different contexts like Work,
             Focus, or Personal browsing.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-100 mb-3">Features</h2>
-          <ul className="space-y-2 text-gray-400">
-            <li className="flex items-start">
-              <span className="text-indigo-400 mr-2">✓</span>
-              <span>Create and manage multiple profiles</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-indigo-400 mr-2">✓</span>
-              <span>Lock websites with password protection</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-indigo-400 mr-2">✓</span>
-              <span>Block distracting websites completely</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-indigo-400 mr-2">✓</span>
-              <span>Redirect URLs to alternative destinations</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-indigo-400 mr-2">✓</span>
-              <span>Encrypted local storage for security</span>
-            </li>
-          </ul>
-        </div>
+        <motion.div
+          className="bg-card border border-border rounded-lg p-6"
+          variants={itemVariants}
+        >
+          <h2 className="text-xl font-semibold text-foreground mb-3">Features</h2>
+          <motion.ul
+            className="space-y-2 text-muted-foreground"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {features.map((feature, index) => (
+              <motion.li
+                key={index}
+                className="flex items-start"
+                variants={featureVariants}
+                whileHover={{ x: 4 }}
+                transition={{ type: "spring", stiffness: 250, damping: 20 }}
+              >
+                <motion.span
+                  className="text-primary mr-2"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1 + index * 0.04, type: "spring", stiffness: 350, damping: 20 }}
+                >
+                  ✓
+                </motion.span>
+                <span>{feature}</span>
+              </motion.li>
+            ))}
+          </motion.ul>
+        </motion.div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-100 mb-3">Privacy</h2>
-          <p className="text-gray-400 leading-relaxed">
+        <motion.div
+          className="bg-card border border-border rounded-lg p-6"
+          variants={itemVariants}
+          whileHover={{ scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 250, damping: 20 }}
+        >
+          <h2 className="text-xl font-semibold text-foreground mb-3">Privacy</h2>
+          <p className="text-muted-foreground leading-relaxed">
             All your data is stored locally on your device using AES-GCM
             encryption. We never send your data to external servers. Your
             profiles, rules, and settings remain completely private.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-100 mb-3">Support</h2>
-          <p className="text-gray-400 leading-relaxed mb-3">
+        <motion.div
+          className="bg-card border border-border rounded-lg p-6"
+          variants={itemVariants}
+          whileHover={{ scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 250, damping: 20 }}
+        >
+          <h2 className="text-xl font-semibold text-foreground mb-3">Support</h2>
+          <p className="text-muted-foreground leading-relaxed mb-3">
             Need help or found a bug?
           </p>
-          <a
+          <motion.a
             href="https://github.com/narayann7/LinkLock"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center text-indigo-400 hover:text-indigo-300 transition"
+            className="inline-flex items-center text-primary hover:text-primary/80 transition"
+            whileHover={{ x: 4 }}
+            transition={{ type: "spring", stiffness: 250, damping: 20 }}
           >
             Visit our GitHub repository →
-          </a>
-        </div>
+          </motion.a>
+        </motion.div>
 
-        <div className="text-center text-sm text-gray-500 pt-6">
+        <motion.div
+          className="text-center text-sm text-muted-foreground pt-6"
+          variants={itemVariants}
+        >
           <p>Made with care for better browsing habits</p>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
   Download,
@@ -27,6 +28,62 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Progress } from "../ui/progress";
+
+const stepVariants = {
+  enter: { opacity: 0, x: 20 },
+  center: {
+    opacity: 1,
+    x: 0,
+    transition: { type: "spring" as const, stiffness: 300, damping: 30 },
+  },
+  exit: {
+    opacity: 0,
+    x: -20,
+    transition: { duration: 0.15 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 300, damping: 25 },
+  },
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+};
+
+const successIconVariants = {
+  hidden: { scale: 0, rotate: -180 },
+  visible: {
+    scale: 1,
+    rotate: 0,
+    transition: { type: "spring" as const, stiffness: 200, damping: 15 },
+  },
+};
+
+const errorVariants = {
+  hidden: { opacity: 0, y: -8, height: 0 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    height: "auto",
+    transition: { type: "spring" as const, stiffness: 400, damping: 30 },
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
+    height: 0,
+    transition: { duration: 0.15 },
+  },
+};
 
 interface ExportModalProps {
   open: boolean;
@@ -128,7 +185,13 @@ export function ExportModal({
   };
 
   const renderSelectStep = () => (
-    <>
+    <motion.div
+      key="select"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Download className="w-5 h-5" />
@@ -140,9 +203,19 @@ export function ExportModal({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="py-4 space-y-4">
+      <motion.div
+        className="py-4 space-y-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Profiles */}
-        <label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors">
+        <motion.label
+          className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors"
+          variants={itemVariants}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+        >
           <Checkbox
             id="include-profiles"
             checked={includeProfiles}
@@ -160,10 +233,15 @@ export function ExportModal({
               available
             </p>
           </div>
-        </label>
+        </motion.label>
 
         {/* Rules */}
-        <label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors">
+        <motion.label
+          className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors"
+          variants={itemVariants}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+        >
           <Checkbox
             id="include-rules"
             checked={includeRules}
@@ -178,29 +256,45 @@ export function ExportModal({
               {rules.length} rule{rules.length !== 1 ? "s" : ""} available
             </p>
           </div>
-        </label>
+        </motion.label>
 
-        {error && (
-          <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
-            {error}
-          </div>
-        )}
-      </div>
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm overflow-hidden"
+              variants={errorVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       <DialogFooter>
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        <Button onClick={handleProceedToPassword}>
-          <FileJson className="w-4 h-4 mr-2" />
-          Continue
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button onClick={handleProceedToPassword}>
+            <FileJson className="w-4 h-4 mr-2" />
+            Continue
+          </Button>
+        </motion.div>
       </DialogFooter>
-    </>
+    </motion.div>
   );
 
   const renderPasswordStep = () => (
-    <>
+    <motion.div
+      key="password"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Lock className="w-5 h-5" />
@@ -222,7 +316,9 @@ export function ExportModal({
               placeholder="Enter your master password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`pr-10 ${error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+              className={`pr-10 ${
+                error ? "border-destructive focus-visible:ring-destructive" : ""
+              }`}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -244,11 +340,19 @@ export function ExportModal({
           </div>
         </div>
 
-        {error && (
-          <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
-            {error}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm overflow-hidden"
+              variants={errorVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Summary */}
         <div className="p-3 rounded-lg bg-muted/50 border">
@@ -274,16 +378,24 @@ export function ExportModal({
         <Button variant="secondary" onClick={() => setStep("select")}>
           Back
         </Button>
-        <Button onClick={handleExport} disabled={!password}>
-          <Download className="w-4 h-4 mr-2" />
-          Export Backup
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button onClick={handleExport} disabled={!password}>
+            <Download className="w-4 h-4 mr-2" />
+            Export Backup
+          </Button>
+        </motion.div>
       </DialogFooter>
-    </>
+    </motion.div>
   );
 
   const renderExportingStep = () => (
-    <>
+    <motion.div
+      key="exporting"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Download className="w-5 h-5 animate-pulse" />
@@ -296,22 +408,39 @@ export function ExportModal({
 
       <div className="py-8 space-y-4">
         <Progress value={progress} className="w-full" />
-        <p className="text-center text-sm text-muted-foreground">
+        <motion.p
+          className="text-center text-sm text-muted-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           {progress < 50
             ? "Preparing data..."
             : progress < 80
-              ? "Encrypting backup..."
-              : "Finalizing..."}
-        </p>
+            ? "Encrypting backup..."
+            : "Finalizing..."}
+        </motion.p>
       </div>
-    </>
+    </motion.div>
   );
 
   const renderSuccessStep = () => (
-    <>
+    <motion.div
+      key="success"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2 text-green-500">
-          <Check className="w-5 h-5" />
+          <motion.div
+            variants={successIconVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <Check className="w-5 h-5" />
+          </motion.div>
           Export Complete
         </DialogTitle>
         <DialogDescription>
@@ -319,29 +448,46 @@ export function ExportModal({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="py-6 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 mb-4">
+      <motion.div
+        className="py-6 text-center"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 mb-4"
+          variants={successIconVariants}
+          initial="hidden"
+          animate="visible"
+        >
           <FileJson className="w-8 h-8 text-green-500" />
-        </div>
-        <p className="text-sm text-muted-foreground">
+        </motion.div>
+        <motion.p
+          className="text-sm text-muted-foreground"
+          variants={itemVariants}
+        >
           Store your backup file in a safe location. You&apos;ll need your
           master password to import it.
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
 
       <DialogFooter>
-        <Button onClick={handleClose}>Done</Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button onClick={handleClose}>Done</Button>
+        </motion.div>
       </DialogFooter>
-    </>
+    </motion.div>
   );
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent showCloseButton={step !== "exporting"}>
-        {step === "select" && renderSelectStep()}
-        {step === "password" && renderPasswordStep()}
-        {step === "exporting" && renderExportingStep()}
-        {step === "success" && renderSuccessStep()}
+        <AnimatePresence mode="wait">
+          {step === "select" && renderSelectStep()}
+          {step === "password" && renderPasswordStep()}
+          {step === "exporting" && renderExportingStep()}
+          {step === "success" && renderSuccessStep()}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );

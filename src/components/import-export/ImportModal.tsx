@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   Check,
@@ -30,6 +31,76 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Progress } from "../ui/progress";
+
+const stepVariants = {
+  enter: { opacity: 0, x: 20 },
+  center: {
+    opacity: 1,
+    x: 0,
+    transition: { type: "spring" as const, stiffness: 300, damping: 30 },
+  },
+  exit: {
+    opacity: 0,
+    x: -20,
+    transition: { duration: 0.15 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 300, damping: 25 },
+  },
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+};
+
+const successIconVariants = {
+  hidden: { scale: 0, rotate: -180 },
+  visible: {
+    scale: 1,
+    rotate: 0,
+    transition: { type: "spring" as const, stiffness: 200, damping: 15 },
+  },
+};
+
+const errorVariants = {
+  hidden: { opacity: 0, y: -8, height: 0 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    height: "auto",
+    transition: { type: "spring" as const, stiffness: 400, damping: 30 },
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
+    height: 0,
+    transition: { duration: 0.15 },
+  },
+};
+
+const dropZoneVariants = {
+  idle: { scale: 1, borderColor: "hsl(var(--muted-foreground) / 0.25)" },
+  hover: {
+    scale: 1.02,
+    borderColor: "hsl(var(--primary) / 0.5)",
+    transition: { type: "spring" as const, stiffness: 400, damping: 20 },
+  },
+  active: {
+    scale: 1.02,
+    borderColor: "hsl(var(--primary))",
+    backgroundColor: "hsl(var(--primary) / 0.05)",
+  },
+};
 
 interface ImportModalProps {
   open: boolean;
@@ -236,8 +307,8 @@ export function ImportModal({
     }
 
     setImportResult({
-      profiles: importProfiles ? (decryptedPayload.profiles?.length || 0) : 0,
-      rules: importRules ? (decryptedPayload.rules?.length || 0) : 0,
+      profiles: importProfiles ? decryptedPayload.profiles?.length || 0 : 0,
+      rules: importRules ? decryptedPayload.rules?.length || 0 : 0,
     });
     setStep("success");
   };
@@ -261,7 +332,13 @@ export function ImportModal({
   };
 
   const renderUploadStep = () => (
-    <>
+    <motion.div
+      key="upload"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Upload className="w-5 h-5" />
@@ -273,19 +350,25 @@ export function ImportModal({
       </DialogHeader>
 
       <div className="py-4 space-y-4">
-        <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            isDragOver
-              ? "border-primary bg-primary/5"
-              : "border-muted-foreground/25 hover:border-primary/50"
-          }`}
+        <motion.div
+          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer"
+          variants={dropZoneVariants}
+          animate={isDragOver ? "active" : "idle"}
+          whileHover="hover"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onClick={handleSelectFileClick}
         >
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
+          <motion.div
+            className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4"
+            animate={
+              isDragOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }
+            }
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          >
             <FileJson className="w-6 h-6 text-muted-foreground" />
-          </div>
+          </motion.div>
           <p className="text-sm font-medium mb-2">
             Drag and drop your backup file here
           </p>
@@ -303,13 +386,21 @@ export function ImportModal({
           <Button variant="secondary" onClick={handleSelectFileClick}>
             Select File
           </Button>
-        </div>
+        </motion.div>
 
-        {error && (
-          <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
-            {error}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm overflow-hidden"
+              variants={errorVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <DialogFooter>
@@ -317,11 +408,17 @@ export function ImportModal({
           Cancel
         </Button>
       </DialogFooter>
-    </>
+    </motion.div>
   );
 
   const renderPreviewStep = () => (
-    <>
+    <motion.div
+      key="preview"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <FileJson className="w-5 h-5" />
@@ -332,22 +429,36 @@ export function ImportModal({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="py-4 space-y-4">
+      <motion.div
+        className="py-4 space-y-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* File info */}
-        <div className="p-3 rounded-lg bg-muted/50 border">
+        <motion.div
+          className="p-3 rounded-lg bg-muted/50 border"
+          variants={itemVariants}
+        >
           <p className="text-sm font-medium">{file?.name}</p>
           {exportedAt && (
             <p className="text-sm text-muted-foreground">
               Created: {formatDate(exportedAt)}
             </p>
           )}
-        </div>
+        </motion.div>
 
         {/* Contents summary */}
         <div className="space-y-2">
-          <p className="text-sm font-medium">Backup Contents</p>
+          <motion.p className="text-sm font-medium" variants={itemVariants}>
+            Backup Contents
+          </motion.p>
 
-          <div className="flex items-center gap-3 p-3 rounded-lg border">
+          <motion.div
+            className="flex items-center gap-3 p-3 rounded-lg border"
+            variants={itemVariants}
+            whileHover={{ scale: 1.01 }}
+          >
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10">
               <User className="w-4 h-4 text-blue-500" />
             </div>
@@ -355,16 +466,22 @@ export function ImportModal({
               <span className="font-medium">Profiles</span>
               <p className="text-sm text-muted-foreground">
                 {metadata?.includesProfiles
-                  ? `${metadata.profileCount} profile${metadata.profileCount !== 1 ? "s" : ""}`
+                  ? `${metadata.profileCount} profile${
+                      metadata.profileCount !== 1 ? "s" : ""
+                    }`
                   : "Not included"}
               </p>
             </div>
             {metadata?.includesProfiles && (
               <Check className="w-5 h-5 text-blue-500" />
             )}
-          </div>
+          </motion.div>
 
-          <div className="flex items-center gap-3 p-3 rounded-lg border">
+          <motion.div
+            className="flex items-center gap-3 p-3 rounded-lg border"
+            variants={itemVariants}
+            whileHover={{ scale: 1.01 }}
+          >
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/10">
               <Shield className="w-4 h-4 text-green-500" />
             </div>
@@ -372,31 +489,41 @@ export function ImportModal({
               <span className="font-medium">Rules</span>
               <p className="text-sm text-muted-foreground">
                 {metadata?.includesRules
-                  ? `${metadata.ruleCount} rule${metadata.ruleCount !== 1 ? "s" : ""}`
+                  ? `${metadata.ruleCount} rule${
+                      metadata.ruleCount !== 1 ? "s" : ""
+                    }`
                   : "Not included"}
               </p>
             </div>
             {metadata?.includesRules && (
               <Check className="w-5 h-5 text-green-500" />
             )}
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       <DialogFooter>
         <Button variant="secondary" onClick={() => setStep("upload")}>
           Back
         </Button>
-        <Button onClick={() => setStep("password")}>
-          <Lock className="w-4 h-4 mr-2" />
-          Continue
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button onClick={() => setStep("password")}>
+            <Lock className="w-4 h-4 mr-2" />
+            Continue
+          </Button>
+        </motion.div>
       </DialogFooter>
-    </>
+    </motion.div>
   );
 
   const renderPasswordStep = () => (
-    <>
+    <motion.div
+      key="password"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Lock className="w-5 h-5" />
@@ -417,7 +544,9 @@ export function ImportModal({
               placeholder="Enter the backup password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`pr-10 ${error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+              className={`pr-10 ${
+                error ? "border-destructive focus-visible:ring-destructive" : ""
+              }`}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -439,26 +568,42 @@ export function ImportModal({
           </div>
         </div>
 
-        {error && (
-          <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
-            {error}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm overflow-hidden"
+              variants={errorVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <DialogFooter>
         <Button variant="secondary" onClick={() => setStep("preview")}>
           Back
         </Button>
-        <Button onClick={handleDecrypt} disabled={!password}>
-          Decrypt
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button onClick={handleDecrypt} disabled={!password}>
+            Decrypt
+          </Button>
+        </motion.div>
       </DialogFooter>
-    </>
+    </motion.div>
   );
 
   const renderSelectStep = () => (
-    <>
+    <motion.div
+      key="select"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Upload className="w-5 h-5" />
@@ -469,10 +614,18 @@ export function ImportModal({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="py-4 space-y-4">
+      <motion.div
+        className="py-4 space-y-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Warning about replacement */}
         {(currentProfiles.length > 0 || currentRules.length > 0) && (
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <motion.div
+            className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20"
+            variants={itemVariants}
+          >
             <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5" />
             <div className="text-sm">
               <p className="font-medium text-amber-500">Existing data found</p>
@@ -483,12 +636,17 @@ export function ImportModal({
                 that may be affected.
               </p>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Profiles */}
         {metadata?.includesProfiles && decryptedPayload?.profiles && (
-          <label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors">
+          <motion.label
+            className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors"
+            variants={itemVariants}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
             <Checkbox
               id="import-profiles"
               checked={importProfiles}
@@ -506,12 +664,17 @@ export function ImportModal({
                 {decryptedPayload.profiles.length !== 1 ? "s" : ""} in backup
               </p>
             </div>
-          </label>
+          </motion.label>
         )}
 
         {/* Rules */}
         {metadata?.includesRules && decryptedPayload?.rules && (
-          <label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors">
+          <motion.label
+            className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors"
+            variants={itemVariants}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
             <Checkbox
               id="import-rules"
               checked={importRules}
@@ -527,7 +690,7 @@ export function ImportModal({
                 {decryptedPayload.rules.length !== 1 ? "s" : ""} in backup
               </p>
             </div>
-          </label>
+          </motion.label>
         )}
 
         {/* Merge strategy */}
@@ -572,27 +735,43 @@ export function ImportModal({
             </div>
           )}
 
-        {error && (
-          <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
-            {error}
-          </div>
-        )}
-      </div>
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm overflow-hidden"
+              variants={errorVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       <DialogFooter>
         <Button variant="secondary" onClick={() => setStep("password")}>
           Back
         </Button>
-        <Button onClick={handleImport}>
-          <Upload className="w-4 h-4 mr-2" />
-          Import
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button onClick={handleImport}>
+            <Upload className="w-4 h-4 mr-2" />
+            Import
+          </Button>
+        </motion.div>
       </DialogFooter>
-    </>
+    </motion.div>
   );
 
   const renderImportingStep = () => (
-    <>
+    <motion.div
+      key="importing"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Upload className="w-5 h-5 animate-pulse" />
@@ -605,18 +784,35 @@ export function ImportModal({
 
       <div className="py-8 space-y-4">
         <Progress value={progress} className="w-full" />
-        <p className="text-center text-sm text-muted-foreground">
+        <motion.p
+          className="text-center text-sm text-muted-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           {progress < 50 ? "Preparing data..." : "Restoring backup..."}
-        </p>
+        </motion.p>
       </div>
-    </>
+    </motion.div>
   );
 
   const renderSuccessStep = () => (
-    <>
+    <motion.div
+      key="success"
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2 text-green-500">
-          <Check className="w-5 h-5" />
+          <motion.div
+            variants={successIconVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <Check className="w-5 h-5" />
+          </motion.div>
           Import Complete
         </DialogTitle>
         <DialogDescription>
@@ -624,12 +820,25 @@ export function ImportModal({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="py-6 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 mb-4">
+      <motion.div
+        className="py-6 text-center"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 mb-4"
+          variants={successIconVariants}
+          initial="hidden"
+          animate="visible"
+        >
           <Check className="w-8 h-8 text-green-500" />
-        </div>
+        </motion.div>
         {importResult && (
-          <div className="space-y-2 text-sm text-muted-foreground">
+          <motion.div
+            className="space-y-2 text-sm text-muted-foreground"
+            variants={itemVariants}
+          >
             <p>Successfully imported:</p>
             <ul className="space-y-1">
               {importResult.profiles > 0 && (
@@ -644,25 +853,29 @@ export function ImportModal({
                 </li>
               )}
             </ul>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       <DialogFooter>
-        <Button onClick={handleClose}>Done</Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button onClick={handleClose}>Done</Button>
+        </motion.div>
       </DialogFooter>
-    </>
+    </motion.div>
   );
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent showCloseButton={step !== "importing"}>
-        {step === "upload" && renderUploadStep()}
-        {step === "preview" && renderPreviewStep()}
-        {step === "password" && renderPasswordStep()}
-        {step === "select" && renderSelectStep()}
-        {step === "importing" && renderImportingStep()}
-        {step === "success" && renderSuccessStep()}
+        <AnimatePresence mode="wait">
+          {step === "upload" && renderUploadStep()}
+          {step === "preview" && renderPreviewStep()}
+          {step === "password" && renderPasswordStep()}
+          {step === "select" && renderSelectStep()}
+          {step === "importing" && renderImportingStep()}
+          {step === "success" && renderSuccessStep()}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );

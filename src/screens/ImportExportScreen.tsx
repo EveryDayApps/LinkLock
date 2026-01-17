@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { LinkRule, Profile } from "@/models/interfaces";
 import {
   useAuthManager,
@@ -15,6 +14,7 @@ import {
   useProfileManager,
   useRuleManager,
 } from "@/services/core";
+import { motion } from "framer-motion";
 import {
   AlertTriangle,
   Download,
@@ -28,17 +28,54 @@ import { useEffect, useState } from "react";
 
 const MAX_PROFILES = 7;
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+} as const;
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+};
+
+const securityItemVariants = {
+  hidden: { opacity: 0, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+};
+
 interface ImportExportScreenProps {
   onImportSuccess?: () => void;
 }
 
-export function ImportExportScreen({ onImportSuccess }: ImportExportScreenProps) {
+export function ImportExportScreen({
+  onImportSuccess,
+}: ImportExportScreenProps) {
   const authManager = useAuthManager();
   const profileManager = useProfileManager();
   const ruleManager = useRuleManager();
   const db = useDatabase();
 
-  const [isInitialized, setIsInitialized] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [rules, setRules] = useState<LinkRule[]>([]);
   const [hasMasterPassword, setHasMasterPassword] = useState(false);
@@ -48,11 +85,8 @@ export function ImportExportScreen({ onImportSuccess }: ImportExportScreenProps)
 
   useEffect(() => {
     const initialize = async () => {
-      // Initialize managers
-      await profileManager.initialize();
-      await ruleManager.initialize();
-
-      // Load data
+      // Managers should already be initialized from MasterPasswordGuard
+      // Load data in parallel
       const [loadedProfiles, loadedRules, hasPassword] = await Promise.all([
         profileManager.getAllProfiles(),
         ruleManager.getAllRules(),
@@ -62,11 +96,10 @@ export function ImportExportScreen({ onImportSuccess }: ImportExportScreenProps)
       setProfiles(loadedProfiles);
       setRules(loadedRules);
       setHasMasterPassword(hasPassword);
-      setIsInitialized(true);
     };
 
     initialize();
-  }, [profileManager, ruleManager, db, authManager]);
+  }, [profileManager, ruleManager, authManager]);
 
   const handleVerifyPassword = async (password: string): Promise<boolean> => {
     const result = await authManager.verifyMasterPassword(password);
@@ -83,7 +116,11 @@ export function ImportExportScreen({ onImportSuccess }: ImportExportScreenProps)
     };
   }): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { profiles: importedProfiles, rules: importedRules, options } = data;
+      const {
+        profiles: importedProfiles,
+        rules: importedRules,
+        options,
+      } = data;
 
       // Handle profiles
       if (options.importProfiles && importedProfiles) {
@@ -106,7 +143,9 @@ export function ImportExportScreen({ onImportSuccess }: ImportExportScreenProps)
           if (existingCount + newProfiles.length > MAX_PROFILES) {
             return {
               success: false,
-              error: `Cannot import. Total profiles would be ${existingCount + newProfiles.length}, but maximum is ${MAX_PROFILES}.`,
+              error: `Cannot import. Total profiles would be ${
+                existingCount + newProfiles.length
+              }, but maximum is ${MAX_PROFILES}.`,
             };
           }
         }
@@ -164,194 +203,206 @@ export function ImportExportScreen({ onImportSuccess }: ImportExportScreenProps)
     }
   };
 
-  if (!isInitialized) {
-    return (
-      <div className="p-8">
-        <div className="mb-8 space-y-2">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-5 w-96" />
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 max-w-4xl">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-6 w-32" />
-              </div>
-              <Skeleton className="h-4 w-64 mt-1" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-10 w-full rounded-md" />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-6 w-32" />
-              </div>
-              <Skeleton className="h-4 w-64 mt-1" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-10 w-full rounded-md" />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <motion.div
+      className="p-8"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div className="mb-8" variants={itemVariants}>
         <h1 className="text-3xl font-bold text-foreground">Backup</h1>
         <p className="text-muted-foreground mt-2">
           Backup and restore your profiles and rules securely
         </p>
-      </div>
+      </motion.div>
 
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl">
         {/* Export Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="w-5 h-5" />
-              Export Backup
-            </CardTitle>
-            <CardDescription>
-              Create an encrypted backup of your data
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Current data summary */}
-            <div className="p-4 rounded-lg bg-muted/50 border space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10">
-                  <User className="w-4 h-4 text-blue-500" />
-                </div>
-                <div>
-                  <p className="font-medium">
-                    {profiles.length} Profile{profiles.length !== 1 ? "s" : ""}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Available to export
-                  </p>
-                </div>
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                Export Backup
+              </CardTitle>
+              <CardDescription>
+                Create an encrypted backup of your data
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Current data summary */}
+              <div className="p-4 rounded-lg bg-muted/50 border space-y-3">
+                <motion.div
+                  className="flex items-center gap-3"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: "spring", stiffness: 250, damping: 20 }}
+                >
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10">
+                    <User className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                      {profiles.length} Profile
+                      {profiles.length !== 1 ? "s" : ""}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Available to export
+                    </p>
+                  </div>
+                </motion.div>
+                <motion.div
+                  className="flex items-center gap-3"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: "spring", stiffness: 250, damping: 20 }}
+                >
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/10">
+                    <Shield className="w-4 h-4 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                      {rules.length} Rule{rules.length !== 1 ? "s" : ""}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Available to export
+                    </p>
+                  </div>
+                </motion.div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/10">
-                  <Shield className="w-4 h-4 text-green-500" />
-                </div>
-                <div>
-                  <p className="font-medium">
-                    {rules.length} Rule{rules.length !== 1 ? "s" : ""}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Available to export
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            <Button
-              className="w-full"
-              onClick={() => setExportModalOpen(true)}
-              disabled={!hasMasterPassword}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export Backup
-            </Button>
-          </CardContent>
-        </Card>
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Button
+                  className="w-full"
+                  onClick={() => setExportModalOpen(true)}
+                  disabled={!hasMasterPassword}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Backup
+                </Button>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Import Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Import Backup
-            </CardTitle>
-            <CardDescription>
-              Restore data from a backup file
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Import info */}
-            <div className="p-4 rounded-lg bg-muted/50 border space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
-                  <FileJson className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium">JSON Backup File</p>
-                  <p className="text-sm text-muted-foreground">
-                    Supports .json format
-                  </p>
-                </div>
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                Import Backup
+              </CardTitle>
+              <CardDescription>Restore data from a backup file</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Import info */}
+              <div className="p-4 rounded-lg bg-muted/50 border space-y-3">
+                <motion.div
+                  className="flex items-center gap-3"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: "spring", stiffness: 250, damping: 20 }}
+                >
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+                    <FileJson className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">JSON Backup File</p>
+                    <p className="text-sm text-muted-foreground">
+                      Supports .json format
+                    </p>
+                  </div>
+                </motion.div>
+                <motion.div
+                  className="flex items-center gap-3"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: "spring", stiffness: 250, damping: 20 }}
+                >
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Password Required</p>
+                    <p className="text-sm text-muted-foreground">
+                      Original backup password needed
+                    </p>
+                  </div>
+                </motion.div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10">
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
-                </div>
-                <div>
-                  <p className="font-medium">Password Required</p>
-                  <p className="text-sm text-muted-foreground">
-                    Original backup password needed
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            <Button
-              className="w-full"
-              variant="secondary"
-              onClick={() => setImportModalOpen(true)}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Import Backup
-            </Button>
-          </CardContent>
-        </Card>
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Button
+                  className="w-full"
+                  variant="secondary"
+                  onClick={() => setImportModalOpen(true)}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Backup
+                </Button>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
       {/* Security Info */}
-      <Card className="mt-6 max-w-4xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <HardDrive className="w-5 h-5" />
-            Backup Security
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="font-medium mb-1">AES-256 Encryption</p>
-              <p className="text-sm text-muted-foreground">
-                Your backup file is encrypted with industry-standard AES-256-GCM
-                encryption.
-              </p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="font-medium mb-1">Password Protected</p>
-              <p className="text-sm text-muted-foreground">
-                Only someone with your master password can decrypt and restore
-                the backup.
-              </p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="font-medium mb-1">Integrity Verified</p>
-              <p className="text-sm text-muted-foreground">
-                SHA-256 checksums ensure your backup hasn&apos;t been tampered
-                with.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div variants={itemVariants}>
+        <Card className="mt-6 max-w-4xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HardDrive className="w-5 h-5" />
+              Backup Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <motion.div
+              className="grid gap-4 md:grid-cols-3"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.div
+                className="p-4 rounded-lg bg-muted/50"
+                variants={securityItemVariants}
+                whileHover={{ scale: 1.02, y: -2 }}
+              >
+                <p className="font-medium mb-1">AES-256 Encryption</p>
+                <p className="text-sm text-muted-foreground">
+                  Your backup file is encrypted with industry-standard
+                  AES-256-GCM encryption.
+                </p>
+              </motion.div>
+              <motion.div
+                className="p-4 rounded-lg bg-muted/50"
+                variants={securityItemVariants}
+                whileHover={{ scale: 1.02, y: -2 }}
+              >
+                <p className="font-medium mb-1">Password Protected</p>
+                <p className="text-sm text-muted-foreground">
+                  Only someone with your master password can decrypt and restore
+                  the backup.
+                </p>
+              </motion.div>
+              <motion.div
+                className="p-4 rounded-lg bg-muted/50"
+                variants={securityItemVariants}
+                whileHover={{ scale: 1.02, y: -2 }}
+              >
+                <p className="font-medium mb-1">Integrity Verified</p>
+                <p className="text-sm text-muted-foreground">
+                  SHA-256 checksums ensure your backup hasn&apos;t been tampered
+                  with.
+                </p>
+              </motion.div>
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Export Modal */}
       <ExportModal
@@ -370,6 +421,6 @@ export function ImportExportScreen({ onImportSuccess }: ImportExportScreenProps)
         currentProfiles={profiles}
         currentRules={rules}
       />
-    </div>
+    </motion.div>
   );
 }

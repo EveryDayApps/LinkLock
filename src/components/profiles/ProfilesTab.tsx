@@ -1,4 +1,5 @@
 import { useProfileManager } from "@/services/core";
+import { AnimatePresence, motion } from "framer-motion";
 import { Plus, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Profile } from "../../models/interfaces";
@@ -12,17 +13,71 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
-import { Skeleton } from "../ui/skeleton";
 import { CreateProfileModal } from "./CreateProfileModal";
 import { EditProfileModal } from "./EditProfileModal";
 
 const MAX_PROFILES = 7;
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+} as const;
+
+const cardVariants = {
+  hidden: {
+    opacity: 0,
+    y: -20,
+    scale: 0.96,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      ease: [0.25, 0.46, 0.45, 0.94] as const,
+      opacity: { duration: 0.3 },
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.93,
+    y: 10,
+    transition: {
+      duration: 0.2,
+      ease: [0.4, 0, 0.6, 1] as const,
+    },
+  },
+};
+
+const emptyStateVariants = {
+  hidden: {
+    opacity: 0,
+    y: -15,
+    scale: 0.96,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.5,
+      ease: [0.25, 0.46, 0.45, 0.94] as const,
+      delay: 0.1,
+    },
+  },
+};
+
 export function ProfilesTab() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const profileManager = useProfileManager();
-  const [isInitialized, setIsInitialized] = useState(false);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -42,16 +97,15 @@ export function ProfilesTab() {
   useEffect(() => {
     const initializeProfiles = async () => {
       try {
-        await profileManager.initialize();
+        // Manager should already be initialized from MasterPasswordGuard
         await loadProfiles();
-        setIsInitialized(true);
       } catch (error) {
         console.error("[ProfilesTab] Failed to initialize:", error);
       }
     };
 
     initializeProfiles();
-  }, [profileManager]);
+  }, []);
 
   // Keyboard shortcut: Shift+P to open Create Profile modal
   useEffect(() => {
@@ -78,7 +132,10 @@ export function ProfilesTab() {
     name: string
   ): Promise<{ success: boolean; error?: string }> => {
     if (profiles.length >= MAX_PROFILES) {
-      return { success: false, error: `Maximum of ${MAX_PROFILES} profiles allowed` };
+      return {
+        success: false,
+        error: `Maximum of ${MAX_PROFILES} profiles allowed`,
+      };
     }
     const result = await profileManager.createProfile(name);
     if (result.success) {
@@ -130,42 +187,6 @@ export function ProfilesTab() {
     setDeleteDialogOpen(true);
   };
 
-  if (!isInitialized) {
-    return (
-      <div className="p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div className="space-y-2">
-            <Skeleton className="h-9 w-28" />
-            <Skeleton className="h-5 w-80" />
-          </div>
-          <Skeleton className="h-10 w-32 rounded-md" />
-        </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="flex items-center justify-center">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="w-10 h-10 rounded-lg" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-8 w-16 rounded-md" />
-                    <Skeleton className="h-8 w-14 rounded-md" />
-                    <Skeleton className="h-8 w-16 rounded-md" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
@@ -184,7 +205,11 @@ export function ProfilesTab() {
           <Button
             onClick={() => setCreateModalOpen(true)}
             disabled={profiles.length >= MAX_PROFILES}
-            title={profiles.length >= MAX_PROFILES ? `Maximum of ${MAX_PROFILES} profiles allowed` : undefined}
+            title={
+              profiles.length >= MAX_PROFILES
+                ? `Maximum of ${MAX_PROFILES} profiles allowed`
+                : undefined
+            }
           >
             <Plus className="w-4 h-4 mr-2" />
             New Profile
@@ -195,79 +220,136 @@ export function ProfilesTab() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {profiles.map((profile) => {
-          const isActive = profile.id === activeProfileId;
+      <motion.div
+        className="space-y-3"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <AnimatePresence mode="popLayout">
+          {profiles.map((profile) => {
+            const isActive = profile.id === activeProfileId;
 
-          return (
-            <Card key={profile.id}>
-              <CardContent className="flex items-center justify-center">
-                <div className="flex items-center justify-between w-full ">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isActive ? "bg-primary" : "bg-muted"
-                      }`}
-                    >
-                      <User
-                        className={`w-5 h-5 ${
-                          isActive
-                            ? "text-primary-foreground"
-                            : "text-muted-foreground"
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground flex items-center gap-2">
-                        {profile.name}
-                        {isActive && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary text-primary-foreground">
-                            Active
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        0 rules configured
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!isActive && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleSwitchProfile(profile.id)}
-                      >
-                        Switch
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditModal(profile)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => openDeleteDialog(profile)}
-                      disabled={isActive}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+            return (
+              <motion.div
+                key={profile.id}
+                variants={cardVariants}
+                layout
+                exit="exit"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.01, y: -2 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                >
+                  <Card className="transition-shadow hover:shadow-md">
+                    <CardContent className="flex items-center justify-center">
+                      <div className="flex items-center justify-between w-full ">
+                        <div className="flex items-center gap-4">
+                          <motion.div
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                              isActive ? "bg-primary" : "bg-muted"
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            layout
+                          >
+                            <User
+                              className={`w-5 h-5 ${
+                                isActive
+                                  ? "text-primary-foreground"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                          </motion.div>
+                          <div>
+                            <h3 className="font-semibold text-foreground flex items-center gap-2">
+                              {profile.name}
+                              <AnimatePresence>
+                                {isActive && (
+                                  <motion.span
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary text-primary-foreground"
+                                  >
+                                    Active
+                                  </motion.span>
+                                )}
+                              </AnimatePresence>
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-0.5">
+                              0 rules configured
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <AnimatePresence mode="wait">
+                            {!isActive && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                              >
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleSwitchProfile(profile.id)
+                                  }
+                                >
+                                  Switch
+                                </Button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditModal(profile)}
+                            >
+                              Edit
+                            </Button>
+                          </motion.div>
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => openDeleteDialog(profile)}
+                              disabled={isActive}
+                            >
+                              Delete
+                            </Button>
+                          </motion.div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
 
         {profiles.length === 0 && (
-          <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+          <motion.div
+            className="text-center py-16"
+            variants={emptyStateVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <motion.div
+              className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4"
+              whileHover={{ scale: 1.05, rotate: 5 }}
+            >
               <User className="w-8 h-8 text-muted-foreground" />
-            </div>
+            </motion.div>
             <h3 className="text-lg font-semibold text-foreground mb-2">
               No profiles yet
             </h3>
@@ -275,13 +357,15 @@ export function ProfilesTab() {
               Create your first profile to start managing different browsing
               contexts
             </p>
-            <Button onClick={() => setCreateModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First Profile
-            </Button>
-          </div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button onClick={() => setCreateModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Your First Profile
+              </Button>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       <CreateProfileModal
         open={createModalOpen}
