@@ -1,7 +1,14 @@
 import { useProfileManager } from "@/services/core";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  CheckCircle2,
+  Edit,
+  MoreVertical,
+  Plus,
+  Trash,
+  User,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { CreateProfileModal } from "../components/profiles/CreateProfileModal";
 import { EditProfileModal } from "../components/profiles/EditProfileModal";
 import { Button } from "../components/ui/button";
@@ -14,6 +21,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import type { Profile } from "../models/interfaces";
 
 const MAX_PROFILES = 7;
@@ -29,7 +43,7 @@ const containerVariants = {
   },
 } as const;
 
-const cardVariants = {
+const itemVariants = {
   hidden: {
     opacity: 0,
     y: -20,
@@ -86,13 +100,13 @@ export function ProfilesTab() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
 
-  const loadProfiles = async () => {
+  const loadProfiles = useCallback(async () => {
     const allProfiles = await profileManager.getAllProfiles();
     setProfiles(allProfiles);
 
     const activeProfile = await profileManager.getActiveProfile();
     setActiveProfileId(activeProfile?.id || null);
-  };
+  }, [profileManager]);
 
   useEffect(() => {
     const initializeProfiles = async () => {
@@ -105,7 +119,7 @@ export function ProfilesTab() {
     };
 
     initializeProfiles();
-  }, []);
+  }, [loadProfiles]);
 
   // Keyboard shortcut: Shift+P to open Create Profile modal
   useEffect(() => {
@@ -226,14 +240,14 @@ export function ProfilesTab() {
         initial="hidden"
         animate="visible"
       >
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence>
           {profiles.map((profile, index) => {
             const isActive = profile.id === activeProfileId;
 
             return (
               <motion.div
                 key={profile.id}
-                variants={cardVariants}
+                variants={itemVariants}
                 custom={index}
                 initial="hidden"
                 animate="visible"
@@ -245,8 +259,13 @@ export function ProfilesTab() {
                 >
                   <Card className="transition-shadow hover:shadow-md">
                     <CardContent className="flex items-center justify-center">
-                      <div className="flex items-center justify-between w-full ">
-                        <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-between w-full p-2">
+                        <div
+                          className="flex items-center gap-4 flex-1 cursor-pointer"
+                          onClick={() =>
+                            !isActive && handleSwitchProfile(profile.id)
+                          }
+                        >
                           <motion.div
                             className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                               isActive ? "bg-primary" : "bg-muted"
@@ -262,72 +281,73 @@ export function ProfilesTab() {
                               }`}
                             />
                           </motion.div>
-                          <div>
-                            <h3 className="font-semibold text-foreground flex items-center gap-2">
-                              {profile.name}
-                              <AnimatePresence>
-                                {isActive && (
-                                  <motion.span
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary text-primary-foreground"
-                                  >
-                                    Active
-                                  </motion.span>
-                                )}
-                              </AnimatePresence>
-                            </h3>
-                            <p className="text-sm text-muted-foreground mt-0.5">
-                              0 rules configured
-                            </p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-foreground">
+                                {profile.name}
+                              </h3>
+                              {isActive && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary text-primary-foreground">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                              <span>0 rules configured</span>
+                              {!isActive && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-primary hover:underline">
+                                    Click to activate
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
+
                         <div className="flex items-center gap-2">
-                          <AnimatePresence mode="wait">
-                            {!isActive && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {!isActive && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleSwitchProfile(profile.id)
+                                    }
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                                    Set as Active
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
+                              <DropdownMenuItem
+                                onClick={() => openEditModal(profile)}
                               >
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleSwitchProfile(profile.id)
-                                  }
-                                >
-                                  Switch
-                                </Button>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditModal(profile)}
-                            >
-                              Edit
-                            </Button>
-                          </motion.div>
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => openDeleteDialog(profile)}
-                              disabled={isActive}
-                            >
-                              Delete
-                            </Button>
-                          </motion.div>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => openDeleteDialog(profile)}
+                                disabled={isActive}
+                                className={
+                                  isActive
+                                    ? ""
+                                    : "text-destructive focus:text-destructive"
+                                }
+                              >
+                                <Trash className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </CardContent>
