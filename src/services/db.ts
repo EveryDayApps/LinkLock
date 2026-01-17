@@ -7,15 +7,28 @@ import Dexie, { type EntityTable } from "dexie";
 import type { LinkRule, Profile } from "../models/interfaces";
 import type {
   DBChangeCallback,
+  DBChangeEvent,
   EncryptedProfile,
   MasterPasswordData,
   StoredRule,
 } from "../models/types";
+import type { IEncryptedObservableDatabase } from "./database";
 import { EncryptionService } from "./encryption";
 import { DatabaseListenerManager } from "./listenerManager";
+import { dbLogger } from "./logger";
 
 // Define the database schema
-export class LinkLockDatabase extends Dexie {
+export class LinkLockDatabase
+  extends Dexie
+  implements
+  IEncryptedObservableDatabase<
+    Profile,
+    EncryptedProfile,
+    LinkRule,
+    StoredRule,
+    MasterPasswordData,
+    DBChangeEvent<unknown>
+  > {
   profiles!: EntityTable<EncryptedProfile, "id">;
   rules!: EntityTable<StoredRule, "id">;
   masterPassword!: EntityTable<MasterPasswordData, "id">;
@@ -44,12 +57,6 @@ export class LinkLockDatabase extends Dexie {
       this.rules,
       this.masterPassword,
     );
-
-    this.onRuleChange((change) => {
-      console.log(
-        `[DB Listener] Rule Change Detected: Type=${change.type}, Key=${change.key}`,
-      );
-    });
   }
 
   async initialize(): Promise<void> {
@@ -64,13 +71,13 @@ export class LinkLockDatabase extends Dexie {
   private async loadMasterPasswordFromDB(): Promise<void> {
     try {
       const masterPasswordData = await this.masterPassword.get("master");
-      console.log("masterPasswordData", masterPasswordData);
+      dbLogger.debug("masterPasswordData", masterPasswordData);
       if (masterPasswordData) {
         this.masterPasswordHash = masterPasswordData.encryptedPasswordHash;
       }
     } catch (error) {
-      console.error(
-        "[DB] Error loading master password from IndexedDB:",
+      dbLogger.error(
+        "Error loading master password from IndexedDB:",
         error,
       );
     }
@@ -81,6 +88,8 @@ export class LinkLockDatabase extends Dexie {
    */
   setMasterPassword(hash: string): void {
     this.masterPasswordHash = hash;
+    // Notify listeners about the change
+    this.listenerManager.notifyMasterPasswordHashChange(hash);
   }
 
   /**
@@ -149,11 +158,11 @@ export class LinkLockDatabase extends Dexie {
       throw new Error("Master password not set");
     }
 
-    console.log(
-      "[DB] Decrypting profile with hash:",
+    dbLogger.debug(
+      "Decrypting profile with hash:",
       this.masterPasswordHash.substring(0, 10) + "...",
     );
-    console.log("[DB] Profile ID:", encryptedProfile.id);
+    dbLogger.debug("Profile ID:", encryptedProfile.id);
 
     const decrypted = await this.encryptionService.decrypt(
       encryptedProfile.encryptedData,

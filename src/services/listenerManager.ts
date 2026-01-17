@@ -11,6 +11,7 @@ import type {
   StoredRule,
 } from "../models/types";
 import { notifyDbChange } from "../utils/browser_utils";
+import { listenerLogger } from "./logger";
 
 /**
  * Generic listener manager class for managing event subscriptions
@@ -42,7 +43,7 @@ export class ListenerManager<T extends (...args: any[]) => void> {
   subscribe(callback: T): () => void {
     this.listeners.add(callback);
     if (this.debug) {
-      console.log(`[${this.name}] Listener added. Total: ${this.listeners.size}`);
+      listenerLogger.debug(`[${this.name}] Listener added. Total: ${this.listeners.size}`);
     }
     return () => this.unsubscribe(callback);
   }
@@ -55,7 +56,7 @@ export class ListenerManager<T extends (...args: any[]) => void> {
   unsubscribe(callback: T): boolean {
     const deleted = this.listeners.delete(callback);
     if (this.debug && deleted) {
-      console.log(`[${this.name}] Listener removed. Total: ${this.listeners.size}`);
+      listenerLogger.debug(`[${this.name}] Listener removed. Total: ${this.listeners.size}`);
     }
     return deleted;
   }
@@ -70,7 +71,7 @@ export class ListenerManager<T extends (...args: any[]) => void> {
       try {
         callback(...args);
       } catch (error) {
-        console.error(`[${this.name}] Error in listener:`, error);
+        listenerLogger.error(`[${this.name}] Error in listener:`, error);
       }
     });
   }
@@ -95,7 +96,7 @@ export class ListenerManager<T extends (...args: any[]) => void> {
   clear(): void {
     this.listeners.clear();
     if (this.debug) {
-      console.log(`[${this.name}] All listeners cleared`);
+      listenerLogger.debug(`[${this.name}] All listeners cleared`);
     }
   }
 }
@@ -157,6 +158,7 @@ export class DatabaseListenerManager {
   onMasterPasswordHashChange(
     callback: (hash: string | null) => void,
   ): () => void {
+    listenerLogger.debug("Subscribing to master password hash changes");
     return this.masterPasswordHashListeners.subscribe(callback);
   }
 
@@ -165,6 +167,7 @@ export class DatabaseListenerManager {
    * @param hash - The new hash value
    */
   notifyMasterPasswordHashChange(hash: string | null): void {
+    listenerLogger.info("Master password hash changed, notifying listeners");
     this.masterPasswordHashListeners.notify(hash);
   }
 
@@ -174,6 +177,7 @@ export class DatabaseListenerManager {
    * @returns Unsubscribe function
    */
   onProfileChange(callback: DBChangeCallback<EncryptedProfile>): () => void {
+    listenerLogger.debug("Subscribing to profile changes");
     return this.profileListeners.subscribe(callback);
   }
 
@@ -183,6 +187,7 @@ export class DatabaseListenerManager {
    * @returns Unsubscribe function
    */
   onRuleChange(callback: DBChangeCallback<StoredRule>): () => void {
+    listenerLogger.debug("Subscribing to rule changes");
     return this.ruleListeners.subscribe(callback);
   }
 
@@ -194,6 +199,7 @@ export class DatabaseListenerManager {
   onMasterPasswordChange(
     callback: DBChangeCallback<MasterPasswordData>,
   ): () => void {
+    listenerLogger.debug("Subscribing to master password table changes");
     return this.masterPasswordListeners.subscribe(callback);
   }
 
@@ -212,16 +218,20 @@ export class DatabaseListenerManager {
     rules: EntityTable<StoredRule, "id">,
     masterPassword: EntityTable<MasterPasswordData, "id">,
   ): void {
+    listenerLogger.info("Setting up Dexie hooks for all tables");
     this.setupProfileHooks(profiles);
     this.setupRuleHooks(rules);
     this.setupMasterPasswordHooks(masterPassword);
+    listenerLogger.debug("Dexie hooks setup complete");
   }
 
   /**
    * Set up Dexie hooks for the profiles table
    */
   private setupProfileHooks(profiles: EntityTable<EncryptedProfile, "id">): void {
+    listenerLogger.debug("Setting up profile table hooks");
     profiles.hook("creating", (primKey, obj) => {
+      listenerLogger.info(`Profile CREATED: ${primKey}`);
       this.profileListeners.notify({
         type: "create",
         table: "profiles",
@@ -236,6 +246,7 @@ export class DatabaseListenerManager {
     });
 
     profiles.hook("updating", (modifications, primKey, obj) => {
+      listenerLogger.info(`Profile UPDATED: ${primKey}`, modifications);
       this.profileListeners.notify({
         type: "update",
         table: "profiles",
@@ -251,6 +262,7 @@ export class DatabaseListenerManager {
     });
 
     profiles.hook("deleting", (primKey, obj) => {
+      listenerLogger.info(`Profile DELETED: ${primKey}`);
       this.profileListeners.notify({
         type: "delete",
         table: "profiles",
@@ -269,7 +281,9 @@ export class DatabaseListenerManager {
    * Set up Dexie hooks for the rules table
    */
   private setupRuleHooks(rules: EntityTable<StoredRule, "id">): void {
+    listenerLogger.debug("Setting up rules table hooks");
     rules.hook("creating", (primKey, obj) => {
+      listenerLogger.info(`Rule CREATED: ${primKey}`);
       this.ruleListeners.notify({
         type: "create",
         table: "rules",
@@ -280,6 +294,7 @@ export class DatabaseListenerManager {
     });
 
     rules.hook("updating", (modifications, primKey, obj) => {
+      listenerLogger.info(`Rule UPDATED: ${primKey}`, modifications);
       this.ruleListeners.notify({
         type: "update",
         table: "rules",
@@ -295,6 +310,7 @@ export class DatabaseListenerManager {
     });
 
     rules.hook("deleting", (primKey, obj) => {
+      listenerLogger.info(`Rule DELETED: ${primKey}`);
       this.ruleListeners.notify({
         type: "delete",
         table: "rules",
@@ -313,7 +329,9 @@ export class DatabaseListenerManager {
    * Set up Dexie hooks for the masterPassword table
    */
   private setupMasterPasswordHooks(masterPassword: EntityTable<MasterPasswordData, "id">): void {
+    listenerLogger.debug("Setting up masterPassword table hooks");
     masterPassword.hook("creating", (primKey, obj) => {
+      listenerLogger.info(`MasterPassword CREATED: ${primKey}`);
       this.masterPasswordListeners.notify({
         type: "create",
         table: "masterPassword",
@@ -328,6 +346,7 @@ export class DatabaseListenerManager {
     });
 
     masterPassword.hook("updating", (modifications, primKey, obj) => {
+      listenerLogger.info(`MasterPassword UPDATED: ${primKey}`);
       this.masterPasswordListeners.notify({
         type: "update",
         table: "masterPassword",
@@ -343,6 +362,7 @@ export class DatabaseListenerManager {
     });
 
     masterPassword.hook("deleting", (primKey, obj) => {
+      listenerLogger.info(`MasterPassword DELETED: ${primKey}`);
       this.masterPasswordListeners.notify({
         type: "delete",
         table: "masterPassword",
@@ -361,10 +381,12 @@ export class DatabaseListenerManager {
    * Clear all listeners (useful for cleanup/testing)
    */
   clearAll(): void {
+    listenerLogger.info("Clearing all listeners");
     this.profileListeners.clear();
     this.ruleListeners.clear();
     this.masterPasswordListeners.clear();
     this.masterPasswordHashListeners.clear();
+    listenerLogger.debug("All listeners cleared");
   }
 }
 
