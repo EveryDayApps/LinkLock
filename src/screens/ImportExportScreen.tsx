@@ -205,7 +205,7 @@ export function ImportExportScreen({
 
   return (
     <motion.div
-      className="p-8"
+      className="p-8 max-w-6xl mx-auto"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -217,7 +217,7 @@ export function ImportExportScreen({
         </p>
       </motion.div>
 
-      <div className="grid gap-6 md:grid-cols-2 max-w-4xl">
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Export Card */}
         <motion.div variants={itemVariants}>
           <Card>

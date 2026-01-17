@@ -1,7 +1,16 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Database, FileText, Info, Lock, Settings, User } from "lucide-react";
+import {
+  Database,
+  FileText,
+  Info,
+  Lock,
+  Menu,
+  Settings,
+  User,
+} from "lucide-react";
 import { useState } from "react";
 import { MasterPasswordGuard } from "./components/MasterPasswordGuard";
+import { Sheet, SheetContent } from "./components/ui/sheet";
 import { AboutScreen } from "./screens/AboutScreen";
 import { ImportExportScreen } from "./screens/ImportExportScreen";
 import { ProfilesTab } from "./screens/ProfilesScreen";
@@ -31,7 +40,7 @@ const screenVariants = {
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>("rules");
-  const [isSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleNavigate = (screen: ScreenType) => {
@@ -63,10 +72,41 @@ function App() {
   return (
     <MasterPasswordGuard>
       <div className="dark min-h-screen bg-background text-foreground">
-        <div className="flex h-screen">
-          {/* Sidebar */}
-          {isSidebarOpen && (
-            <div className="w-64 border-r border-border bg-card p-6">
+        <div className="relative h-screen">
+          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+            {/* Main Content */}
+            <div className="h-screen overflow-auto bg-background">
+              {/* Drawer Toggle Button */}
+              <div className="fixed top-4 left-4 z-50">
+                <motion.button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="p-2 rounded-lg bg-card border border-border hover:bg-accent transition-colors shadow-lg"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Menu className="w-5 h-5" />
+                </motion.button>
+              </div>
+              <AnimatePresence mode="sync">
+                <motion.div
+                  key={currentScreen}
+                  variants={screenVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{
+                    duration: 0.15,
+                    ease: "easeOut",
+                  }}
+                  className="h-full"
+                >
+                  {renderScreen()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Sidebar */}
+            <SheetContent side="left" className="w-64 p-6" hideCloseButton>
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                   <motion.div
@@ -118,28 +158,8 @@ function App() {
                   );
                 })}
               </nav>
-            </div>
-          )}
-
-          {/* Main Content with AnimatePresence */}
-          <div className="flex-1 overflow-auto bg-background">
-            <AnimatePresence mode="sync">
-              <motion.div
-                key={currentScreen}
-                variants={screenVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{
-                  duration: 0.15,
-                  ease: "easeOut",
-                }}
-                className="h-full"
-              >
-                {renderScreen()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </MasterPasswordGuard>

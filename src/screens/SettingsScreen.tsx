@@ -138,7 +138,7 @@ export function SettingsScreen() {
 
   return (
     <motion.div
-      className="p-8"
+      className="p-8 max-w-6xl mx-auto"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -150,7 +150,7 @@ export function SettingsScreen() {
         </p>
       </motion.div>
 
-      <div className="max-w-3xl space-y-6">
+      <div className="space-y-6">
         {/* User ID Display */}
         <AnimatePresence>
           {hasMasterPassword && userId && (

@@ -47,7 +47,7 @@ const features = [
 export function AboutScreen() {
   return (
     <motion.div
-      className="p-6"
+      className="p-6 max-w-6xl mx-auto"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -57,7 +57,7 @@ export function AboutScreen() {
         <p className="text-muted-foreground mt-2">Version 1.0.0</p>
       </motion.div>
 
-      <div className="max-w-3xl space-y-6">
+      <div className="space-y-6">
         <motion.div
           className="bg-card border border-border rounded-lg p-6"
           variants={itemVariants}
