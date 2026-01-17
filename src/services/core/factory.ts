@@ -10,7 +10,6 @@ import { PasswordService } from "../passwordService";
 import { ProfileManager } from "../profileManager";
 import { RuleEvaluator } from "../ruleEvaluator";
 import { RuleManager } from "../ruleManager";
-import { StorageService } from "../storage";
 import { UnlockSessionManager } from "../unlockSessionManager";
 import type { ServiceOptions, Services } from "./types";
 
@@ -28,7 +27,6 @@ export function createServices(_options?: ServiceOptions): Services {
 
   // Step 3: Create services that depend on step 1 & 2
   const authManager = new AuthManager(db, passwordService, encryptionService);
-  const storageService = new StorageService(encryptionService);
 
   // Step 4: Create session and state management services
   const unlockSessionManager = new UnlockSessionManager();
@@ -50,7 +48,6 @@ export function createServices(_options?: ServiceOptions): Services {
     // Data services
     profileManager,
     ruleManager,
-    storageService,
 
     // Business logic services
     ruleEvaluator,

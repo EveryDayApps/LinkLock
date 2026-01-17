@@ -10,7 +10,6 @@ import type { PasswordService } from "../services/passwordService";
 import type { ProfileManager } from "../services/profileManager";
 import type { RuleEvaluator } from "../services/ruleEvaluator";
 import type { RuleManager } from "../services/ruleManager";
-import type { StorageService } from "../services/storage";
 import type { UnlockSessionManager } from "../services/unlockSessionManager";
 import type { LinkRule, Profile } from "./interfaces";
 
@@ -220,7 +219,6 @@ export interface MessageHandler {
   sessionManager: UnlockSessionManager;
   profileManager: ProfileManager;
   ruleManager: RuleManager;
-  localStorageSyncService: StorageService;
   db: LinkLockDatabase;
 }
 
@@ -240,7 +238,6 @@ export interface Services {
   // Data services
   profileManager: ProfileManager;
   ruleManager: RuleManager;
-  storageService: StorageService;
 
   // Business logic services
   ruleEvaluator: RuleEvaluator;
