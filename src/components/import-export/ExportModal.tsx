@@ -162,9 +162,12 @@ export function ExportModal({
 
     setProgress(40);
 
+    // Filter out the default profile from export - it should never be exported
+    const profilesToExport = profiles.filter((p) => p.id !== "default");
+
     const result = await exportManager.createExport(
       password,
-      profiles,
+      profilesToExport,
       rules,
       options
     );
@@ -481,7 +484,10 @@ export function ExportModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent showCloseButton={step !== "exporting"}>
+      <DialogContent
+        className="!max-w-3xl"
+        showCloseButton={step !== "exporting"}
+      >
         <AnimatePresence mode="wait">
           {step === "select" && renderSelectStep()}
           {step === "password" && renderPasswordStep()}

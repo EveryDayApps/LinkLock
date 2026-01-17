@@ -109,17 +109,32 @@ export function AddRuleModal({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (open && activeProfileId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedProfiles([activeProfileId]);
+    if (open) {
+      // Default to active profile, or "default" profile, or first available profile
+      const defaultProfileId =
+        activeProfileId ||
+        profiles.find((p) => p.id === "default")?.id ||
+        profiles[0]?.id;
+
+      if (defaultProfileId) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedProfiles([defaultProfileId]);
+      }
     }
-  }, [open, activeProfileId]);
+  }, [open, activeProfileId, profiles]);
 
   const resetForm = () => {
     setUrlPattern("");
     setAction("lock");
     setApplyToAllSubdomains(false);
-    setSelectedProfiles(activeProfileId ? [activeProfileId] : []);
+
+    // Default to active profile, or "default" profile, or first available profile
+    const defaultProfileId =
+      activeProfileId ||
+      profiles.find((p) => p.id === "default")?.id ||
+      profiles[0]?.id;
+
+    setSelectedProfiles(defaultProfileId ? [defaultProfileId] : []);
     setLockMode("always_ask");
     setTimedDuration(5);
     setCustomPassword("");
@@ -208,7 +223,7 @@ export function AddRuleModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="!max-w-3xl max-h-[90vh] overflow-y-auto"
         onKeyDown={handleKeyDown}
       >
         <DialogHeader>

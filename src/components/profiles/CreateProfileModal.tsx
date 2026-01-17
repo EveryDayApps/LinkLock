@@ -54,7 +54,9 @@ const itemVariants = {
 interface CreateProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateProfile: (name: string) => Promise<{ success: boolean; error?: string }>;
+  onCreateProfile: (
+    name: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function CreateProfileModal({
@@ -96,7 +98,7 @@ export function CreateProfileModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="!max-w-lg">
         <DialogHeader>
           <DialogTitle>Create New Profile</DialogTitle>
           <DialogDescription>
@@ -120,7 +122,9 @@ export function CreateProfileModal({
               placeholder="Work, Focus, Personal, etc."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={error ? "border-destructive focus-visible:ring-destructive" : ""}
+              className={
+                error ? "border-destructive focus-visible:ring-destructive" : ""
+              }
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") {

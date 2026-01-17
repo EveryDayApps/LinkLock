@@ -46,6 +46,12 @@ export class RuleManager {
    * Get all rules
    */
   async getAllRules(): Promise<LinkRule[]> {
+    if (!this.db.hasMasterPasswordSet()) {
+      console.warn(
+        "[RuleManager] getAllRules called before master password is set, returning empty array"
+      );
+      return [];
+    }
     const storedRules = await this.db.rules.toArray();
     const rules: LinkRule[] = [];
 
@@ -65,6 +71,12 @@ export class RuleManager {
    * Get rules by profile ID
    */
   async getRulesByProfile(profileId: string): Promise<LinkRule[]> {
+    if (!this.db.hasMasterPasswordSet()) {
+      console.warn(
+        "[RuleManager] getRulesByProfile called before master password is set, returning empty array"
+      );
+      return [];
+    }
     const storedRules = await this.db.rules
       .where("profileIds")
       .equals(profileId)

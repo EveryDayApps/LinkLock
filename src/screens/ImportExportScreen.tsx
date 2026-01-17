@@ -124,20 +124,41 @@ export function ImportExportScreen({
 
       // Handle profiles
       if (options.importProfiles && importedProfiles) {
+        // Filter out the default profile - it should never be imported
+        const profilesToImport = importedProfiles.filter(
+          (p) => p.id !== "default"
+        );
+
         if (options.mergeStrategy === "replace") {
           // Check if imported profiles exceed limit
-          if (importedProfiles.length > MAX_PROFILES) {
+          if (profilesToImport.length > MAX_PROFILES) {
             return {
               success: false,
-              error: `Cannot import ${importedProfiles.length} profiles. Maximum of ${MAX_PROFILES} profiles allowed.`,
+              error: `Cannot import ${profilesToImport.length} profiles. Maximum of ${MAX_PROFILES} profiles allowed.`,
             };
           }
+          // Save default profile before clearing
+          const allProfiles = await db.profiles.toArray();
+          let defaultProfile = null;
+          for (const p of allProfiles) {
+            const decrypted = await db.decryptProfile(p);
+            if (decrypted.id === "default") {
+              defaultProfile = p;
+              break;
+            }
+          }
+
           // Clear existing profiles
           await db.profiles.clear();
+
+          // Restore default profile
+          if (defaultProfile) {
+            await db.profiles.add(defaultProfile);
+          }
         } else {
           // Merge mode: check if combined count exceeds limit
           const existingCount = profiles.length;
-          const newProfiles = importedProfiles.filter(
+          const newProfiles = profilesToImport.filter(
             (p) => !profiles.some((ep) => ep.id === p.id)
           );
           if (existingCount + newProfiles.length > MAX_PROFILES) {
@@ -150,8 +171,8 @@ export function ImportExportScreen({
           }
         }
 
-        // Import profiles
-        for (const profile of importedProfiles) {
+        // Import profiles (excluding default)
+        for (const profile of profilesToImport) {
           const existing = await db.profiles.get(profile.id);
           if (options.mergeStrategy === "merge" && existing) {
             // Skip existing profiles in merge mode
@@ -205,7 +226,7 @@ export function ImportExportScreen({
 
   return (
     <motion.div
-      className="p-8 max-w-6xl mx-auto"
+      className="p-8 max-w-4xl mx-auto"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

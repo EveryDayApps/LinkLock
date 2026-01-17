@@ -50,16 +50,47 @@ export class ProfileManager {
 
     try {
       const encryptedProfiles = await this.db.profiles.toArray();
+      console.log(
+        "[ProfileManager] Found",
+        encryptedProfiles.length,
+        "encrypted profiles"
+      );
 
       if (encryptedProfiles.length === 0) {
+        console.log("[ProfileManager] No profiles found, creating default...");
         await this.createDefaultProfile();
       } else {
         // Decrypt profiles to find active one
         const profiles = await Promise.all(
           encryptedProfiles.map((ep) => this.db.decryptProfile(ep))
         );
-        const activeProfile = profiles.find((p) => p.isActive);
-        this.activeProfileId = activeProfile?.id || null;
+        console.log(
+          "[ProfileManager] Decrypted profiles:",
+          profiles.map((p) => ({
+            id: p.id,
+            name: p.name,
+            isActive: p.isActive,
+          }))
+        );
+
+        // Check if default profile exists
+        const hasDefault = profiles.some((p) => p.id === "default");
+        if (!hasDefault) {
+          console.log(
+            "[ProfileManager] Default profile missing, creating it..."
+          );
+          await this.createDefaultProfile();
+          // Reload profiles
+          const updatedEncrypted = await this.db.profiles.toArray();
+          const updatedProfiles = await Promise.all(
+            updatedEncrypted.map((ep) => this.db.decryptProfile(ep))
+          );
+          const activeProfile = updatedProfiles.find((p) => p.isActive);
+          this.activeProfileId = activeProfile?.id || null;
+        } else {
+          const activeProfile = profiles.find((p) => p.isActive);
+          this.activeProfileId = activeProfile?.id || null;
+        }
       }
     } catch (error) {
       // If decryption fails, it means old unencrypted data exists
@@ -68,6 +99,10 @@ export class ProfileManager {
       await this.createDefaultProfile();
     } finally {
       this.isInitialized = true;
+      console.log(
+        "[ProfileManager] Initialization complete. Active profile ID:",
+        this.activeProfileId
+      );
     }
   }
 
@@ -75,8 +110,9 @@ export class ProfileManager {
    * Create default profile on first run
    */
   private async createDefaultProfile(): Promise<void> {
+    console.log("[ProfileManager] Creating default profile...");
     const profile: Profile = {
-      id: crypto.randomUUID(),
+      id: "default",
       name: "Default",
       isActive: true,
       createdAt: Date.now(),
@@ -86,12 +122,24 @@ export class ProfileManager {
     const encrypted = await this.db.encryptProfile(profile);
     await this.db.profiles.add(encrypted);
     this.activeProfileId = profile.id;
+    console.log(
+      "[ProfileManager] Default profile created successfully with ID:",
+      profile.id
+    );
+
+    // add in db
   }
 
   /**
    * Get active profile
    */
   async getActiveProfile(): Promise<Profile | null> {
+    if (!this.isInitialized) {
+      console.warn(
+        "[ProfileManager] getActiveProfile called before initialization"
+      );
+      return null;
+    }
     if (!this.activeProfileId) {
       console.log("[ProfileManager] No active profile ID set");
       return null;
@@ -115,6 +163,12 @@ export class ProfileManager {
    * Get all profiles
    */
   async getAllProfiles(): Promise<Profile[]> {
+    if (!this.isInitialized) {
+      console.warn(
+        "[ProfileManager] getAllProfiles called before initialization, returning empty array"
+      );
+      return [];
+    }
     const encryptedProfiles = await this.db.profiles.toArray();
     return await Promise.all(
       encryptedProfiles.map((ep) => this.db.decryptProfile(ep))

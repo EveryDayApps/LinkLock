@@ -867,7 +867,10 @@ export function ImportModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent showCloseButton={step !== "importing"}>
+      <DialogContent
+        className="max-w-[30vw] w-[40vw]"
+        showCloseButton={step !== "importing"}
+      >
         <AnimatePresence mode="wait">
           {step === "upload" && renderUploadStep()}
           {step === "preview" && renderPreviewStep()}

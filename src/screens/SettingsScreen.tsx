@@ -138,7 +138,7 @@ export function SettingsScreen() {
 
   return (
     <motion.div
-      className="p-8 max-w-6xl mx-auto"
+      className="p-8 max-w-4xl mx-auto"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
