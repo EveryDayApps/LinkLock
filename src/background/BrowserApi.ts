@@ -1,4 +1,3 @@
-import { getServices } from "../services/core/factory";
 import { browser } from "../utils/get-browser";
 import { backgroundLogger } from "../utils/logger";
 import { BackgroundManager } from "./BackgroundManger";
@@ -10,24 +9,8 @@ export class BrowserApi extends BaseBrowserApi {
   async initialize(): Promise<void> {
     try {
       this.logger.info("BrowserApi initializing...");
-
-      const _services = getServices();
-      await _services.db.initialize();
-
-      super.init(_services);
       this.setupEventListeners();
-      this.manager.initialize();
-
-      if (_services.db.getMasterPasswordHash() === null) {
-        this.logger.info(
-          "Master password not set, skipping service initialization",
-        );
-
-        return;
-      }
-
-      // await _services.ruleManager.initialize();
-      // await _services.profileManager.initialize();
+      await this.manager.initialize();
 
       this.logger.info("BrowserApi initialized successfully");
     } catch (error) {
@@ -38,10 +21,10 @@ export class BrowserApi extends BaseBrowserApi {
   private setupEventListeners(): void {
     this.openOptionsPageListener();
     this.setupNavigationListener();
-    this.manager.onMasterPasswordCreate = () => {
-      this.logger.info("Master password created, re-initializing services...");
-      this.initialize();
-    };
+    // this.manager.onMasterPasswordCreate = () => {
+    //   this.logger.info("Master password created, re-initializing services...");
+    //   this.initialize();
+    // };
   }
 
   openOptionsPageListener(): void {

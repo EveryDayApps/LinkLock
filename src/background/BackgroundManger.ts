@@ -49,24 +49,6 @@ export class BackgroundManager {
   private _isLoaded = false;
 
   // ============================================
-  // External Callbacks
-  // ============================================
-
-  private _onMasterPasswordCreate:
-    | ((masterPassword: MasterPasswordData) => void)
-    | null = null;
-
-  /**
-   * Set a callback to be invoked when a master password is created
-   * @param callback The callback function or null to clear
-   */
-  set onMasterPasswordCreate(
-    callback: (masterPassword: MasterPasswordData) => void,
-  ) {
-    this._onMasterPasswordCreate = callback;
-  }
-
-  // ============================================
   // Getters for State Access
   // ============================================
 
@@ -158,6 +140,8 @@ export class BackgroundManager {
     try {
       // Ensure database is initialized
       await db.initialize();
+
+      if (db.getMasterPasswordData() === null) return;
 
       // Load master password first (needed for decryption)
       await this.loadMasterPassword();
@@ -523,15 +507,7 @@ export class BackgroundManager {
     if (payload.newValue) {
       this._masterPassword = payload.newValue;
       backgroundLogger.debug("Master password set in state");
-
-      // Invoke external callback if registered
-      if (this._onMasterPasswordCreate) {
-        try {
-          this._onMasterPasswordCreate(payload.newValue);
-        } catch (error) {
-          backgroundLogger.error("Error in onMasterPasswordCreate:", error);
-        }
-      }
+      this.loadInitialData();
     }
   }
 
