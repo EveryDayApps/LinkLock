@@ -237,8 +237,8 @@ export function RulesScreen() {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+    <div className="h-full flex flex-col p-8 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-8 flex-shrink-0">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Rules</h2>
           <p className="text-sm text-muted-foreground mt-2">
@@ -255,7 +255,7 @@ export function RulesScreen() {
       </div>
 
       <motion.div
-        className="space-y-3"
+        className="space-y-3 flex-1 overflow-y-auto pr-2"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
