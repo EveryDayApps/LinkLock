@@ -1,3 +1,5 @@
+import type { TypedDBChangePayload } from "@/background/BackgroundModels";
+import { DB_CHANGE_MESSAGE_TYPE } from "@/models/constants";
 import type { BrowserType } from "../models/enums";
 
 import { browser } from "./get-browser";
@@ -23,14 +25,15 @@ export function getBrowser(): typeof chrome | typeof browser | null {
   }
 }
 
-export async function notifyDbChange(payload: {
-  table: string;
-  type: "add" | "update" | "delete";
-  key?: string;
-}) {
+/**
+ * Sync database changes to the background script
+ * Sends the actual data along with the change notification
+ * @param payload - The typed payload containing table, type, key, and entity data
+ */
+export async function syncDbChangeToBackground(payload: TypedDBChangePayload) {
   try {
     await browser.runtime.sendMessage({
-      type: "DB_CHANGE",
+      type: DB_CHANGE_MESSAGE_TYPE,
       payload,
     });
   } catch (err) {

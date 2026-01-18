@@ -61,3 +61,4 @@ export { log };
 // Pre-configured loggers for common modules
 export const dbLogger = createLogger("[DB] 📦");
 export const listenerLogger = createLogger("[Listener] 🎧");
+export const backgroundLogger = createLogger("[Background] 🔧");

@@ -1,34 +1,33 @@
 import { getServices } from "../services/core/factory";
 import { browser } from "../utils/get-browser";
+import { backgroundLogger } from "../utils/logger";
+import { BackgroundManager } from "./BackgroundManger";
 import { BaseBrowserApi } from "./BaseBrowserApi";
+
 export class BrowserApi extends BaseBrowserApi {
+  backgroundManager = new BackgroundManager();
   async initialize(): Promise<void> {
-    console.log("BrowserApi initialized");
+    backgroundLogger.info("BrowserApi initializing...");
+
     const _services = getServices();
     await _services.db.initialize();
     await _services.ruleManager.initialize();
     await _services.profileManager.initialize();
+
     super.init(_services);
     this.initializeServices();
     this.setupEventListeners();
 
-    browser.runtime.onMessage.addListener((message) => {
-      if (message?.type !== "DB_CHANGE") return;
+    this.backgroundManager.initialize();
 
-      const { table, type, key } = message.payload;
-
-      console.log(
-        `DB Change detected: Table=${table}, Type=${type}, Key=${key}`,
-      );
-      return Promise.resolve();
-    });
+    backgroundLogger.info("BrowserApi initialized successfully");
   }
 
   /**
    * Initialize all services
    */
   private initializeServices(): void {
-    console.log("Services initialized successfully");
+    backgroundLogger.debug("Services initialized successfully");
   }
 
   private setupEventListeners(): void {

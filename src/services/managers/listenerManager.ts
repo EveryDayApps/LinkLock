@@ -9,7 +9,7 @@ import type {
   MasterPasswordData,
   StoredRule,
 } from "@/models/types";
-import { notifyDbChange } from "@/utils/browser_utils";
+import { syncDbChangeToBackground } from "@/utils/browser_utils";
 import { listenerLogger } from "@/utils/logger";
 import type { EntityTable } from "dexie";
 
@@ -249,10 +249,11 @@ export class DatabaseListenerManager {
         key: primKey as string,
         newValue: obj,
       });
-      notifyDbChange({
+      syncDbChangeToBackground({
         table: "profiles",
         type: "add",
         key: primKey as string,
+        newValue: obj,
       });
     });
 
@@ -265,10 +266,12 @@ export class DatabaseListenerManager {
         oldValue: obj,
         newValue: { ...obj, ...modifications } as EncryptedProfile,
       });
-      notifyDbChange({
+      syncDbChangeToBackground({
         table: "profiles",
         type: "update",
         key: primKey as string,
+        newValue: { ...obj, ...modifications } as EncryptedProfile,
+        oldValue: obj,
       });
     });
 
@@ -280,10 +283,11 @@ export class DatabaseListenerManager {
         key: primKey as string,
         oldValue: obj,
       });
-      notifyDbChange({
+      syncDbChangeToBackground({
         table: "profiles",
         type: "delete",
         key: primKey as string,
+        oldValue: obj,
       });
     });
   }
@@ -301,7 +305,12 @@ export class DatabaseListenerManager {
         key: primKey as string,
         newValue: obj,
       });
-      notifyDbChange({ table: "rules", type: "add", key: primKey as string });
+      syncDbChangeToBackground({
+        table: "rules",
+        type: "add",
+        key: primKey as string,
+        newValue: obj,
+      });
     });
 
     rules.hook("updating", (modifications, primKey, obj) => {
@@ -313,10 +322,12 @@ export class DatabaseListenerManager {
         oldValue: obj,
         newValue: { ...obj, ...modifications } as StoredRule,
       });
-      notifyDbChange({
+      syncDbChangeToBackground({
         table: "rules",
         type: "update",
         key: primKey as string,
+        newValue: { ...obj, ...modifications } as StoredRule,
+        oldValue: obj,
       });
     });
 
@@ -328,10 +339,11 @@ export class DatabaseListenerManager {
         key: primKey as string,
         oldValue: obj,
       });
-      notifyDbChange({
+      syncDbChangeToBackground({
         table: "rules",
         type: "delete",
         key: primKey as string,
+        oldValue: obj,
       });
     });
   }
@@ -351,10 +363,11 @@ export class DatabaseListenerManager {
         key: primKey as string,
         newValue: obj,
       });
-      notifyDbChange({
+      syncDbChangeToBackground({
         table: "masterPassword",
         type: "add",
         key: primKey as string,
+        newValue: obj,
       });
     });
 
@@ -367,10 +380,12 @@ export class DatabaseListenerManager {
         oldValue: obj,
         newValue: { ...obj, ...modifications } as MasterPasswordData,
       });
-      notifyDbChange({
+      syncDbChangeToBackground({
         table: "masterPassword",
         type: "update",
         key: primKey as string,
+        newValue: { ...obj, ...modifications } as MasterPasswordData,
+        oldValue: obj,
       });
     });
 
@@ -382,10 +397,11 @@ export class DatabaseListenerManager {
         key: primKey as string,
         oldValue: obj,
       });
-      notifyDbChange({
+      syncDbChangeToBackground({
         table: "masterPassword",
         type: "delete",
         key: primKey as string,
+        oldValue: obj,
       });
     });
   }

@@ -2,7 +2,7 @@
 // Dexie Database Configuration
 // Handles IndexedDB setup for offline storage with encryption
 // ============================================
-import { LinkLockIndexedDBName } from "@/models/constants";
+import { LINK_LOCK_INDEXED_DB_NAME } from "@/models/constants";
 import Dexie, { type EntityTable } from "dexie";
 import type { IEncryptedObservableDatabase } from ".";
 import type { LinkRule, Profile } from "../../models/interfaces";
@@ -42,7 +42,7 @@ export class LinkLockDatabase
   private listenerManager = new DatabaseListenerManager();
 
   constructor() {
-    super(LinkLockIndexedDBName);
+    super(LINK_LOCK_INDEXED_DB_NAME);
 
     this.version(1).stores({
       profiles: "id",
