@@ -147,7 +147,7 @@ export function RulesScreen() {
   }, []);
 
   const handleAddRule = async (
-    rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">
+    rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">,
   ): Promise<{ success: boolean; error?: string }> => {
     const result = await ruleManager.createRule(rule);
     if (result.success) {
@@ -160,7 +160,7 @@ export function RulesScreen() {
     ruleId: string,
     updates: Partial<
       Omit<LinkRule, "id" | "createdAt" | "updatedAt" | "profileIds">
-    >
+    >,
   ): Promise<{ success: boolean; error?: string }> => {
     const result = await ruleManager.updateRule(ruleId, updates);
     if (result.success) {
@@ -238,7 +238,7 @@ export function RulesScreen() {
 
   return (
     <div className="h-full flex flex-col p-8 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8 flex-shrink-0">
+      <div className="flex justify-between items-center mb-8 flex-shrink-0 ">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Rules</h2>
           <p className="text-sm text-muted-foreground mt-2">
@@ -255,7 +255,7 @@ export function RulesScreen() {
       </div>
 
       <motion.div
-        className="space-y-3 flex-1 overflow-y-auto pr-2"
+        className="space-y-3 flex-1 overflow-y-auto p-2"
         variants={containerVariants}
         initial="hidden"
         animate="visible"

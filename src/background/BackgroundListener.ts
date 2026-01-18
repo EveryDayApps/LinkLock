@@ -19,7 +19,6 @@ import type {
   RuleChangeHandler,
   RuleChangePayload,
   RuleTableHandlers,
-  TableName,
   TypedDBChangePayload,
 } from "./BackgroundModels";
 
@@ -49,14 +48,14 @@ export type {
   TableHandlers,
   TableName,
   TypedDBChangeMessage,
-  TypedDBChangePayload
+  TypedDBChangePayload,
 } from "./BackgroundModels";
 
 // Re-export type guards
 export {
   isMasterPasswordPayload,
   isProfilePayload,
-  isRulePayload
+  isRulePayload,
 } from "./BackgroundModels";
 
 // ============================================
@@ -98,8 +97,6 @@ export class BackgroundListener {
 
     backgroundLogger.info("Initialized and listening for messages");
   }
-
-
 
   // ============================================
   // Message Handler
@@ -158,7 +155,9 @@ export class BackgroundListener {
         this.dispatchMasterPasswordHandlers(payload);
         break;
       default:
-        backgroundLogger.warn(`Unknown table: ${(payload as TypedDBChangePayload).table}`);
+        backgroundLogger.warn(
+          `Unknown table: ${(payload as TypedDBChangePayload).table}`,
+        );
     }
   }
 
@@ -199,7 +198,9 @@ export class BackgroundListener {
   /**
    * Dispatch to master password handlers with typed payload
    */
-  private dispatchMasterPasswordHandlers(payload: MasterPasswordChangePayload): void {
+  private dispatchMasterPasswordHandlers(
+    payload: MasterPasswordChangePayload,
+  ): void {
     switch (payload.type) {
       case "add":
         this.safeCallTyped(this.masterPasswordHandlers.onCreate, payload);
@@ -404,60 +405,4 @@ export class BackgroundListener {
       }
     };
   }
-
-  // ============================================
-  // Status Methods
-  // ============================================
-
-  /**
-   * Check if the listener is currently initialized
-   */
-  get isListening(): boolean {
-    return this.isInitialized;
-  }
-
-  /**
-   * Get a summary of registered handlers
-   */
-  getHandlerSummary(): Record<TableName, string[]> {
-    const getOperations = (
-      handlers: ProfileTableHandlers | RuleTableHandlers | MasterPasswordTableHandlers,
-    ): string[] => {
-      const ops: string[] = [];
-      if (handlers.onCreate) ops.push("create");
-      if (handlers.onUpdate) ops.push("update");
-      if (handlers.onDelete) ops.push("delete");
-      return ops;
-    };
-
-    return {
-      profiles: getOperations(this.profileHandlers),
-      rules: getOperations(this.ruleHandlers),
-      masterPassword: getOperations(this.masterPasswordHandlers),
-    };
-  }
 }
-
-// ============================================
-// Singleton Instance
-// ============================================
-
-/**
- * Default background listener instance
- * Use this for the main background script
- */
-export const backgroundListener = new BackgroundListener();
-
-// ============================================
-// Convenience Functions
-// ============================================
-
-/**
- * Initialize the background listener
- * Call this in your background.js/ts entry point
- */
-export function initializeBackgroundListener(): void {
-  backgroundListener.initialize();
-}
-
-

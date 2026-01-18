@@ -4,8 +4,10 @@ import { BackgroundManager } from "./BackgroundManger";
 import { BaseBrowserApi } from "./BaseBrowserApi";
 
 export class BrowserApi extends BaseBrowserApi {
-  manager = new BackgroundManager();
   logger = backgroundLogger;
+
+  manager = new BackgroundManager();
+
   async initialize(): Promise<void> {
     try {
       this.logger.info("BrowserApi initializing...");
@@ -21,10 +23,6 @@ export class BrowserApi extends BaseBrowserApi {
   private setupEventListeners(): void {
     this.openOptionsPageListener();
     this.setupNavigationListener();
-    // this.manager.onMasterPasswordCreate = () => {
-    //   this.logger.info("Master password created, re-initializing services...");
-    //   this.initialize();
-    // };
   }
 
   openOptionsPageListener(): void {
@@ -34,13 +32,9 @@ export class BrowserApi extends BaseBrowserApi {
   }
 
   setupNavigationListener(): void {
-    browser.webNavigation.onBeforeNavigate.addListener(async (details) => {
-      const selectedProfile = this.manager.selectedProfile;
-      this.logger.info(
-        `[BrowserApi] selectedProfile for navigation to ${details.url}:`,
-        selectedProfile,
-      );
-    });
+    browser.webNavigation.onBeforeNavigate.addListener(
+      this.manager.onBeforeNavigate,
+    );
   }
 }
 
