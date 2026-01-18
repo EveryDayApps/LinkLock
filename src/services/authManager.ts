@@ -3,7 +3,8 @@
 // Handles master password setup and verification
 // ============================================
 
-import type { LinkLockDatabase, MasterPasswordData } from "./database/db";
+import type { MasterPasswordData } from "@/models/types";
+import type { LinkLockDatabase } from "./database/db";
 import { EncryptionService } from "./encryption";
 import { PasswordService } from "./passwordService";
 

@@ -4,7 +4,7 @@
 // ============================================
 
 import { AuthManager } from "../authManager";
-import { LinkLockDatabase } from "../database/db";
+import { db } from "../database";
 import { EncryptionService } from "../encryption";
 import { PasswordService } from "../passwordService";
 import { ProfileManager } from "../profileManager";
@@ -18,8 +18,7 @@ import type { ServiceOptions, Services } from "./types";
  * This is the single source of truth for service creation
  */
 export function createServices(_options?: ServiceOptions): Services {
-  // Step 1: Create database instance
-  const db = new LinkLockDatabase();
+  // Step 1: Use singleton database instance
 
   // Step 2: Create services with no dependencies
   const passwordService = new PasswordService();
