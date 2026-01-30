@@ -22,6 +22,8 @@
    },
    "permissions": [
       "webNavigation",
+      "webRequest",
+      "declarativeNetRequest",
       "storage",
       "tabs"
    ],

@@ -40,6 +40,7 @@ export default defineConfig(({ mode }): UserConfig => {
           rollupOptions: {
             input: {
               popup: resolve(__dirname, "index.html"),
+              unlock: resolve(__dirname, "unlock.html"),
               background: resolve(__dirname, "src/background/BrowserApi.ts"),
             },
 
