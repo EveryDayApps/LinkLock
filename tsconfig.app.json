@@ -35,6 +35,10 @@
   },
   "include": [
     "src",
-    "src/App.tsx"
+    "src/App.tsx",
+    "dump/ChromeBrowserApi.ts",
+    "dump/FireFoxBrowserApi.ts",
+    "dump/messageHandler.ts",
+    "dump/messaging.ts"
   ]
 }

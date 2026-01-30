@@ -54,6 +54,12 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
     const newServices = getServices();
     await newServices.db.initialize();
 
+    // Initialize managers after database is ready
+    console.log("[ServiceContext] Initializing ProfileManager...");
+    await newServices.profileManager.initialize();
+    console.log("[ServiceContext] Initializing RuleManager...");
+    await newServices.ruleManager.initialize();
+
     setServiceInstance(newServices);
     setIsInitialized(true);
 
@@ -66,6 +72,23 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
       const servicesToUse = services ?? getServices();
 
       await servicesToUse.db.initialize();
+
+      // Only initialize managers if master password is set
+      // On first-time setup, managers will be initialized after password is created
+      const hasMasterPassword =
+        servicesToUse.db.getMasterPasswordHash() !== null;
+
+      if (hasMasterPassword) {
+        console.log("[ServiceContext] Initializing ProfileManager...");
+        await servicesToUse.profileManager.initialize();
+        console.log("[ServiceContext] Initializing RuleManager...");
+        await servicesToUse.ruleManager.initialize();
+      } else {
+        console.log(
+          "[ServiceContext] No master password found, skipping manager initialization",
+        );
+      }
+
       setServiceInstance(servicesToUse);
       setIsInitialized(true);
     }
@@ -102,7 +125,7 @@ export function useServices(): ServicesWithReinitialize {
   if (!services) {
     throw new Error(
       "useServices must be used within a ServiceProvider. " +
-        "Make sure your component is wrapped with <ServiceProvider>."
+        "Make sure your component is wrapped with <ServiceProvider>.",
     );
   }
 
@@ -150,14 +173,6 @@ export function useUnlockSessionManager() {
 }
 
 /**
- * Hook to access StorageService
- */
-export function useStorageService() {
-  const { storageService } = useServices();
-  return storageService;
-}
-
-/**
  * Hook to access Database
  */
 export function useDatabase() {
@@ -188,4 +203,11 @@ export function useEncryptionService() {
 export function useReinitializeServices() {
   const { reinitialize } = useServices();
   return reinitialize;
+}
+
+//LinkLockLocalDb
+
+export function useLocalDb() {
+  const { localDb } = useServices();
+  return localDb;
 }

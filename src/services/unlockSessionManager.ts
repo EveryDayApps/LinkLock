@@ -3,19 +3,7 @@
 // Manages unlock states, timers, and snooze functionality
 // ============================================
 import type { UnlockDuration } from "../models/enums";
-
-export interface UnlockSession {
-  domain: string;
-  profileId: string;
-  unlockedAt: number;
-  expiresAt: number | null; // null = session unlock
-}
-
-export interface SnoozeState {
-  domain: string;
-  profileId: string;
-  snoozedUntil: number;
-}
+import type { SnoozeState, UnlockSession } from "../models/types";
 
 export class UnlockSessionManager {
   private sessions: Map<string, UnlockSession> = new Map();
@@ -35,7 +23,7 @@ export class UnlockSessionManager {
   async unlock(
     domain: string,
     duration: UnlockDuration,
-    profileId: string
+    profileId: string,
   ): Promise<void> {
     const now = Date.now();
     let expiresAt: number | null = null;
@@ -110,7 +98,7 @@ export class UnlockSessionManager {
   async snooze(
     domain: string,
     duration: 5 | 30 | "today",
-    profileId: string
+    profileId: string,
   ): Promise<void> {
     const now = Date.now();
     let snoozedUntil: number;
@@ -266,25 +254,29 @@ export class UnlockSessionManager {
         // Restore sessions
         if (stored.sessions) {
           this.sessions.clear();
-          Object.entries(stored.sessions).forEach(([key, session]: [string, any]) => {
-            this.sessions.set(key, session);
+          Object.entries(stored.sessions).forEach(
+            ([key, session]: [string, any]) => {
+              this.sessions.set(key, session);
 
-            // Restore timers for unexpired sessions
-            if (session.expiresAt && session.expiresAt > Date.now()) {
-              this.setUnlockTimer(key, session.expiresAt - Date.now());
-            }
-          });
+              // Restore timers for unexpired sessions
+              if (session.expiresAt && session.expiresAt > Date.now()) {
+                this.setUnlockTimer(key, session.expiresAt - Date.now());
+              }
+            },
+          );
         }
 
         // Restore snoozes
         if (stored.snoozes) {
           this.snoozes.clear();
-          Object.entries(stored.snoozes).forEach(([key, snooze]: [string, any]) => {
-            if (snooze.snoozedUntil > Date.now()) {
-              this.snoozes.set(key, snooze);
-              this.setSnoozeTimer(key, snooze.snoozedUntil - Date.now());
-            }
-          });
+          Object.entries(stored.snoozes).forEach(
+            ([key, snooze]: [string, any]) => {
+              if (snooze.snoozedUntil > Date.now()) {
+                this.snoozes.set(key, snooze);
+                this.setSnoozeTimer(key, snooze.snoozedUntil - Date.now());
+              }
+            },
+          );
         }
       }
     } catch (error) {

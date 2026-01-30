@@ -3,13 +3,8 @@
 // Matches URLs against rules and determines actions
 // ============================================
 import type { LinkRule } from "../models/interfaces";
+import type { EvaluationResult } from "../models/types";
 import type { UnlockSessionManager } from "./unlockSessionManager";
-
-export type EvaluationResult =
-  | { action: "allow" }
-  | { action: "block"; rule: LinkRule }
-  | { action: "redirect"; target: string; rule: LinkRule }
-  | { action: "require_unlock"; rule: LinkRule; domain: string };
 
 export class RuleEvaluator {
   private sessionManager?: UnlockSessionManager;
@@ -87,7 +82,7 @@ export class RuleEvaluator {
   async evaluate(
     url: string,
     rules: LinkRule[],
-    profileId: string
+    profileId: string,
   ): Promise<EvaluationResult> {
     // Get rules for active profile only
     const profileRules = rules.filter((r) => r.profileIds.includes(profileId));
@@ -126,7 +121,7 @@ export class RuleEvaluator {
         if (this.sessionManager) {
           const isUnlocked = await this.sessionManager.isUnlocked(
             domain,
-            profileId
+            profileId,
           );
           if (isUnlocked) {
             return { action: "allow" };
@@ -135,7 +130,7 @@ export class RuleEvaluator {
           // Check if domain is snoozed
           const isSnoozed = await this.sessionManager.isSnoozed(
             domain,
-            profileId
+            profileId,
           );
           if (isSnoozed) {
             return { action: "allow" };

@@ -1,5 +1,7 @@
 import { useAuthManager } from "@/services/core";
-import { Check, Eye, EyeOff, Key, User as UserIcon } from "lucide-react";
+import { localDb } from "@/services/database/local_lb";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, Eye, EyeOff, Key, Trash2, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MasterPasswordSetup } from "../components/MasterPasswordSetup";
 import { Button } from "../components/ui/button";
@@ -12,13 +14,54 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Skeleton } from "../components/ui/skeleton";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+} as const;
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+};
+
+const messageVariants = {
+  hidden: { opacity: 0, y: -8, height: 0 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    height: "auto",
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
+    height: 0,
+    transition: { duration: 0.15 },
+  },
+};
 
 export function SettingsScreen() {
   const authManager = useAuthManager();
   const [hasMasterPassword, setHasMasterPassword] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Change password states
   const [oldPassword, setOldPassword] = useState("");
@@ -33,10 +76,13 @@ export function SettingsScreen() {
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Clear cache states
+  const [isClearingCache, setIsClearingCache] = useState(false);
+  const [cacheCleared, setCacheCleared] = useState(false);
+  const [cacheError, setCacheError] = useState("");
+
   useEffect(() => {
     const checkMasterPassword = async () => {
-      setIsLoading(true);
-
       const hasPassword = await authManager.hasMasterPassword();
       setHasMasterPassword(hasPassword);
 
@@ -44,8 +90,6 @@ export function SettingsScreen() {
         const userIdValue = await authManager.getUserId();
         setUserId(userIdValue);
       }
-
-      setIsLoading(false);
     };
 
     checkMasterPassword();
@@ -98,221 +142,300 @@ export function SettingsScreen() {
     setIsSubmitting(false);
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-8">
-        <div className="mb-8 space-y-2">
-          <Skeleton className="h-9 w-32" />
-          <Skeleton className="h-5 w-80" />
-        </div>
-        <div className="max-w-2xl space-y-6">
-          {/* User Info Card Skeleton */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-6 w-36" />
-              </div>
-              <Skeleton className="h-4 w-44 mt-1" />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-6 w-48 rounded" />
-              </div>
-            </CardContent>
-          </Card>
-          {/* Password Card Skeleton */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-6 w-48" />
-              </div>
-              <Skeleton className="h-4 w-72 mt-1" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-full rounded-md" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-10 w-full rounded-md" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-10 w-full rounded-md" />
-              </div>
-              <Skeleton className="h-10 w-full rounded-md" />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const handleClearCache = async () => {
+    setIsClearingCache(true);
+    setCacheCleared(false);
+    setCacheError("");
+
+    try {
+      await localDb.clearAllSessions();
+      setCacheCleared(true);
+      setTimeout(() => setCacheCleared(false), 3000);
+    } catch (err) {
+      setCacheError("Failed to clear cache. Please try again.");
+      setTimeout(() => setCacheError(""), 3000);
+    } finally {
+      setIsClearingCache(false);
+    }
+  };
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <motion.div
+      className="p-8 max-w-4xl mx-auto"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div className="mb-8" variants={itemVariants}>
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
         <p className="text-muted-foreground mt-2">
           Configure extension preferences and security options
         </p>
-      </div>
+      </motion.div>
 
-      <div className="max-w-2xl space-y-6">
+      <div className="space-y-6">
         {/* User ID Display */}
-        {hasMasterPassword && userId && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserIcon className="w-5 h-5" />
-                User Information
-              </CardTitle>
-              <CardDescription>Your unique user identifier</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium text-muted-foreground">
-                  User ID:
-                </Label>
-                <code className="text-sm bg-muted px-2 py-1 rounded">
-                  {userId}
-                </code>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <AnimatePresence>
+          {hasMasterPassword && userId && (
+            <motion.div
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserIcon className="w-5 h-5" />
+                    User Information
+                  </CardTitle>
+                  <CardDescription>Your unique user identifier</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      User ID:
+                    </Label>
+                    <motion.code
+                      className="text-sm bg-muted px-2 py-1 rounded"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      {userId}
+                    </motion.code>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Master Password Setup */}
         {!hasMasterPassword ? (
-          <MasterPasswordSetup onSuccess={handlePasswordSetupSuccess} />
+          <motion.div variants={itemVariants}>
+            <MasterPasswordSetup onSuccess={handlePasswordSetupSuccess} />
+          </motion.div>
         ) : (
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  Change Master Password
+                </CardTitle>
+                <CardDescription>
+                  Update your master password. All your data will remain
+                  encrypted with the new password.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <motion.div
+                    className="space-y-2"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      delay: 0.05,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25,
+                    }}
+                  >
+                    <Label htmlFor="oldPassword">Current Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="oldPassword"
+                        type={showOldPassword ? "text" : "password"}
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        placeholder="Enter current password"
+                        disabled={isSubmitting}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOldPassword(!showOldPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showOldPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    className="space-y-2"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      delay: 0.1,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25,
+                    }}
+                  >
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="newPassword"
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        disabled={isSubmitting}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Minimum 8 characters
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    className="space-y-2"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      delay: 0.15,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25,
+                    }}
+                  >
+                    <Label htmlFor="confirmNewPassword">
+                      Confirm New Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmNewPassword"
+                        type={showConfirmNewPassword ? "text" : "password"}
+                        value={confirmNewPassword}
+                        onChange={(e) => setConfirmNewPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        disabled={isSubmitting}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmNewPassword(!showConfirmNewPassword)
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showConfirmNewPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+
+                  <AnimatePresence mode="wait">
+                    {error && (
+                      <motion.div
+                        key="error"
+                        variants={messageVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm"
+                      >
+                        {error}
+                      </motion.div>
+                    )}
+
+                    {success && (
+                      <motion.div
+                        key="success"
+                        variants={messageVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2"
+                      >
+                        <Check className="w-4 h-4" />
+                        {success}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full"
+                    >
+                      <Key className="w-4 h-4 mr-2" />
+                      {isSubmitting
+                        ? "Changing password..."
+                        : "Change Password"}
+                    </Button>
+                  </motion.div>
+                </form>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Clear Cache Section */}
+        <motion.div variants={itemVariants}>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5" />
-                Change Master Password
+                <Trash2 className="w-5 h-5" />
+                Clear Cache
               </CardTitle>
               <CardDescription>
-                Update your master password. All your data will remain encrypted
-                with the new password.
+                Clear all active sessions and cached data. This will log you out
+                of all unlocked sites.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="oldPassword">Current Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="oldPassword"
-                      type={showOldPassword ? "text" : "password"}
-                      value={oldPassword}
-                      onChange={(e) => setOldPassword(e.target.value)}
-                      placeholder="Enter current password"
-                      disabled={isSubmitting}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showOldPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="newPassword"
-                      type={showNewPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      disabled={isSubmitting}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showNewPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Minimum 8 characters
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmNewPassword">
-                    Confirm New Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmNewPassword"
-                      type={showConfirmNewPassword ? "text" : "password"}
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      placeholder="Confirm new password"
-                      disabled={isSubmitting}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmNewPassword(!showConfirmNewPassword)
-                      }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showConfirmNewPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
-                    {error}
+              <div className="space-y-4">
+                {cacheCleared && (
+                  <div className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2">
+                    <Check className="w-4 h-4" />
+                    Cache cleared successfully!
                   </div>
                 )}
 
-                {success && (
-                  <div className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2">
-                    <Check className="w-4 h-4" />
-                    {success}
+                {cacheError && (
+                  <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
+                    {cacheError}
                   </div>
                 )}
 
                 <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full"
+                  variant="secondary"
+                  onClick={handleClearCache}
+                  disabled={isClearingCache}
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 transition-colors"
                 >
-                  <Key className="w-4 h-4 mr-2" />
-                  {isSubmitting ? "Changing password..." : "Change Password"}
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {isClearingCache ? "Clearing cache..." : "Clear All Cache"}
                 </Button>
-              </form>
+              </div>
             </CardContent>
           </Card>
-        )}
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

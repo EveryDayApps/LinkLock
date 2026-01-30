@@ -1,4 +1,6 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,12 +11,52 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Button } from "../ui/button";
+
+const errorVariants = {
+  hidden: { opacity: 0, y: -4, height: 0 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    height: "auto",
+    transition: { type: "spring" as const, stiffness: 400, damping: 30 },
+  },
+  exit: {
+    opacity: 0,
+    y: -4,
+    height: 0,
+    transition: { duration: 0.15 },
+  },
+};
+
+const formVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 25,
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 300, damping: 25 },
+  },
+};
 
 interface CreateProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateProfile: (name: string) => Promise<{ success: boolean; error?: string }>;
+  onCreateProfile: (
+    name: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function CreateProfileModal({
@@ -56,7 +98,7 @@ export function CreateProfileModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="!max-w-lg">
         <DialogHeader>
           <DialogTitle>Create New Profile</DialogTitle>
           <DialogDescription>
@@ -65,37 +107,67 @@ export function CreateProfileModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 space-y-2">
-          <Label htmlFor="profile-name">Profile Name</Label>
-          <Input
-            id="profile-name"
-            placeholder="Work, Focus, Personal, etc."
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={error ? "border-destructive focus-visible:ring-destructive" : ""}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleCreate();
+        <motion.div
+          className="mt-4 space-y-2"
+          variants={formVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div variants={itemVariants}>
+            <Label htmlFor="profile-name">Profile Name</Label>
+          </motion.div>
+          <motion.div variants={itemVariants}>
+            <Input
+              id="profile-name"
+              placeholder="Work, Focus, Personal, etc."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={
+                error ? "border-destructive focus-visible:ring-destructive" : ""
               }
-            }}
-          />
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
-        </div>
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleCreate();
+                }
+              }}
+            />
+          </motion.div>
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.p
+                className="text-sm text-destructive overflow-hidden"
+                variants={errorVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         <DialogFooter>
-          <Button
-            variant="secondary"
-            onClick={handleCancel}
-            disabled={isLoading}
+          <motion.div
+            className="flex gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
           >
-            Cancel
-          </Button>
-          <Button onClick={handleCreate} disabled={isLoading}>
-            {isLoading ? "Creating..." : "Create Profile"}
-          </Button>
+            <Button
+              variant="secondary"
+              onClick={handleCancel}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button onClick={handleCreate} disabled={isLoading}>
+                {isLoading ? "Creating..." : "Create Profile"}
+              </Button>
+            </motion.div>
+          </motion.div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

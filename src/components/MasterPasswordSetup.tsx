@@ -1,4 +1,5 @@
 import { useAuthManager } from "@/services/core";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
@@ -16,6 +17,29 @@ interface MasterPasswordSetupProps {
   onSuccess?: () => void;
   showAsCard?: boolean;
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: "easeOut" as const,
+    },
+  },
+};
 
 export function MasterPasswordSetup({
   onSuccess,
@@ -72,8 +96,14 @@ export function MasterPasswordSetup({
   };
 
   const formContent = (
-    <form onSubmit={handleSetupPassword} className="space-y-4">
-      <div className="space-y-2">
+    <motion.form
+      onSubmit={handleSetupPassword}
+      className="space-y-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div className="space-y-2" variants={itemVariants}>
         <Label htmlFor="password">Master Password</Label>
         <div className="relative">
           <Input
@@ -88,7 +118,7 @@ export function MasterPasswordSetup({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-150"
           >
             {showPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -98,9 +128,9 @@ export function MasterPasswordSetup({
           </button>
         </div>
         <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
-      </div>
+      </motion.div>
 
-      <div className="space-y-2">
+      <motion.div className="space-y-2" variants={itemVariants}>
         <Label htmlFor="confirmPassword">Confirm Password</Label>
         <div className="relative">
           <Input
@@ -115,7 +145,7 @@ export function MasterPasswordSetup({
           <button
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-150"
           >
             {showConfirmPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -124,26 +154,63 @@ export function MasterPasswordSetup({
             )}
           </button>
         </div>
-      </div>
+      </motion.div>
 
-      {error && (
-        <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
-          {error}
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {error && (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm overflow-hidden"
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {success && (
-        <div className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2">
-          <Check className="w-4 h-4" />
-          {success}
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {success && (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.25 }}
+            className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2"
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 20,
+                delay: 0.1,
+              }}
+            >
+              <Check className="w-4 h-4" />
+            </motion.div>
+            {success}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        <Lock className="w-4 h-4 mr-2" />
-        {isSubmitting ? "Setting up..." : "Set Master Password"}
-      </Button>
-    </form>
+      <motion.div variants={itemVariants}>
+        <motion.div
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.15 }}
+        >
+          <Button type="submit" disabled={isSubmitting} className="w-full">
+            <Lock className="w-4 h-4 mr-2" />
+            {isSubmitting ? "Setting up..." : "Set Master Password"}
+          </Button>
+        </motion.div>
+      </motion.div>
+    </motion.form>
   );
 
   if (!showAsCard) {

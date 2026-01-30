@@ -4,13 +4,13 @@
 // ============================================
 
 import { AuthManager } from "../authManager";
-import { LinkLockDatabase } from "../db";
+import { db } from "../database";
+import { LinkLockLocalDb } from "../database/local_lb";
 import { EncryptionService } from "../encryption";
 import { PasswordService } from "../passwordService";
 import { ProfileManager } from "../profileManager";
 import { RuleEvaluator } from "../ruleEvaluator";
 import { RuleManager } from "../ruleManager";
-import { StorageService } from "../storage";
 import { UnlockSessionManager } from "../unlockSessionManager";
 import type { ServiceOptions, Services } from "./types";
 
@@ -19,8 +19,7 @@ import type { ServiceOptions, Services } from "./types";
  * This is the single source of truth for service creation
  */
 export function createServices(_options?: ServiceOptions): Services {
-  // Step 1: Create database instance
-  const db = new LinkLockDatabase();
+  // Step 1: Use singleton database instance
 
   // Step 2: Create services with no dependencies
   const passwordService = new PasswordService();
@@ -28,7 +27,6 @@ export function createServices(_options?: ServiceOptions): Services {
 
   // Step 3: Create services that depend on step 1 & 2
   const authManager = new AuthManager(db, passwordService, encryptionService);
-  const storageService = new StorageService(encryptionService);
 
   // Step 4: Create session and state management services
   const unlockSessionManager = new UnlockSessionManager();
@@ -40,6 +38,8 @@ export function createServices(_options?: ServiceOptions): Services {
   const profileManager = new ProfileManager(db);
   const ruleManager = new RuleManager(db);
 
+  const localDb = new LinkLockLocalDb();
+
   // Return all services
   return {
     // Core services
@@ -50,11 +50,11 @@ export function createServices(_options?: ServiceOptions): Services {
     // Data services
     profileManager,
     ruleManager,
-    storageService,
 
     // Business logic services
     ruleEvaluator,
     unlockSessionManager,
+    localDb,
 
     // Database
     db,

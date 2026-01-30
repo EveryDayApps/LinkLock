@@ -3,7 +3,7 @@
 // Handles CRUD operations for link rules using IndexedDB
 // ============================================
 import type { LinkRule } from "../models/interfaces";
-import type { LinkLockDatabase } from "./db";
+import type { LinkLockDatabase } from "./database/db";
 
 export class RuleManager {
   private db: LinkLockDatabase;
@@ -46,6 +46,12 @@ export class RuleManager {
    * Get all rules
    */
   async getAllRules(): Promise<LinkRule[]> {
+    if (!this.db.hasMasterPasswordSet()) {
+      console.warn(
+        "[RuleManager] getAllRules called before master password is set, returning empty array",
+      );
+      return [];
+    }
     const storedRules = await this.db.rules.toArray();
     const rules: LinkRule[] = [];
 
@@ -65,6 +71,12 @@ export class RuleManager {
    * Get rules by profile ID
    */
   async getRulesByProfile(profileId: string): Promise<LinkRule[]> {
+    if (!this.db.hasMasterPasswordSet()) {
+      console.warn(
+        "[RuleManager] getRulesByProfile called before master password is set, returning empty array",
+      );
+      return [];
+    }
     const storedRules = await this.db.rules
       .where("profileIds")
       .equals(profileId)
@@ -104,7 +116,7 @@ export class RuleManager {
    * Create a new rule
    */
   async createRule(
-    ruleData: Omit<LinkRule, "id" | "createdAt" | "updatedAt">
+    ruleData: Omit<LinkRule, "id" | "createdAt" | "updatedAt">,
   ): Promise<{ success: boolean; error?: string; rule?: LinkRule }> {
     try {
       // Check if URL pattern already exists
@@ -143,7 +155,7 @@ export class RuleManager {
     ruleId: string,
     updates: Partial<
       Omit<LinkRule, "id" | "createdAt" | "updatedAt" | "profileIds">
-    >
+    >,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const existingRule = await this.getRuleById(ruleId);
@@ -173,7 +185,7 @@ export class RuleManager {
    * Delete a rule
    */
   async deleteRule(
-    ruleId: string
+    ruleId: string,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const existingRule = await this.db.rules.get(ruleId);
@@ -195,7 +207,7 @@ export class RuleManager {
    * Toggle rule enabled status
    */
   async toggleRule(
-    ruleId: string
+    ruleId: string,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const existingRule = await this.getRuleById(ruleId);
@@ -226,7 +238,7 @@ export class RuleManager {
    */
   async addProfileToRule(
     ruleId: string,
-    profileId: string
+    profileId: string,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const existingRule = await this.getRuleById(ruleId);
@@ -243,7 +255,7 @@ export class RuleManager {
 
         const storedRule = await this.db.storeRule(
           updatedRule,
-          this.encryptData
+          this.encryptData,
         );
         await this.db.rules.put(storedRule);
       }
@@ -262,7 +274,7 @@ export class RuleManager {
    */
   async removeProfileFromRule(
     ruleId: string,
-    profileId: string
+    profileId: string,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const existingRule = await this.getRuleById(ruleId);

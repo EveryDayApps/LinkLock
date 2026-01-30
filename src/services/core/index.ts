@@ -21,6 +21,6 @@ export {
   useRuleEvaluator,
   useRuleManager,
   useServices,
-  useStorageService,
-  useUnlockSessionManager,
+  useUnlockSessionManager
 } from "./ServiceContext";
+
