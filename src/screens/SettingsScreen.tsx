@@ -1,16 +1,17 @@
 import { useAuthManager } from "@/services/core";
 import { localDb } from "@/services/database/local_lb";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Eye, EyeOff, Key, Trash2, User as UserIcon } from "lucide-react";
+import { Check, Eye, EyeOff, Key, Monitor, Moon, Sun, Trash2, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MasterPasswordSetup } from "../components/MasterPasswordSetup";
+import { useTheme } from "../components/theme-provider";
 import { Button } from "../components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -59,6 +60,7 @@ const messageVariants = {
 };
 
 export function SettingsScreen() {
+  const { theme, setTheme } = useTheme();
   const authManager = useAuthManager();
   const [hasMasterPassword, setHasMasterPassword] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -393,6 +395,49 @@ export function SettingsScreen() {
             </Card>
           </motion.div>
         )}
+
+        {/* Appearance Section */}
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sun className="w-5 h-5" />
+                Appearance
+              </CardTitle>
+              <CardDescription>
+                Customize how Link Lock looks on your device
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <Button
+                  variant={theme === "light" ? "default" : "outline"}
+                  onClick={() => setTheme("light")}
+                  className="flex flex-col items-center gap-2 h-auto py-4"
+                >
+                  <Sun className="w-6 h-6" />
+                  <span>Light</span>
+                </Button>
+                <Button
+                  variant={theme === "dark" ? "default" : "outline"}
+                  onClick={() => setTheme("dark")}
+                  className="flex flex-col items-center gap-2 h-auto py-4"
+                >
+                  <Moon className="w-6 h-6" />
+                  <span>Dark</span>
+                </Button>
+                <Button
+                  variant={theme === "system" ? "default" : "outline"}
+                  onClick={() => setTheme("system")}
+                  className="flex flex-col items-center gap-2 h-auto py-4"
+                >
+                  <Monitor className="w-6 h-6" />
+                  <span>System</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Clear Cache Section */}
         <motion.div variants={itemVariants}>
