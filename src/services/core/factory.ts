@@ -5,6 +5,7 @@
 
 import { AuthManager } from "../authManager";
 import { db } from "../database";
+import { LinkLockLocalDb } from "../database/local_lb";
 import { EncryptionService } from "../encryption";
 import { PasswordService } from "../passwordService";
 import { ProfileManager } from "../profileManager";
@@ -37,6 +38,8 @@ export function createServices(_options?: ServiceOptions): Services {
   const profileManager = new ProfileManager(db);
   const ruleManager = new RuleManager(db);
 
+  const localDb = new LinkLockLocalDb();
+
   // Return all services
   return {
     // Core services
@@ -51,6 +54,7 @@ export function createServices(_options?: ServiceOptions): Services {
     // Business logic services
     ruleEvaluator,
     unlockSessionManager,
+    localDb,
 
     // Database
     db,

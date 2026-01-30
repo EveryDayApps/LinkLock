@@ -1,24 +1,65 @@
+import { usePasswordService } from "@/services/core";
+import { useLocalDb } from "@/services/core/ServiceContext";
+import type { ActiveTabSession } from "@/services/database/local_lb";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { useState } from "react";
-import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
-import { Input } from "../ui/input";
+import { useEffect, useState } from "react";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 
 export default function UnlockScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [url, setUrl] = useState<string | null>(null);
+  //ActiveTabSession
+  const [session, setSession] = useState<ActiveTabSession | null>(null);
+  const passwordService = usePasswordService();
+  const localDb = useLocalDb();
 
-  // Mock site data - in real implementation, this would come from the URL/rule
-  const siteName = "example.com";
-  const siteFavicon = "🔒";
+  useEffect(() => {
+    const fetchSession = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlParam = urlParams.get("url");
+      if (urlParam) {
+        const decodedUrl = atob(urlParam);
+        console.log("Decoded URL:", decodedUrl);
+        setUrl(decodedUrl);
+        const fetchedSession = await localDb.getSession(decodedUrl);
+        console.log("Fetched session:", fetchedSession);
+        if (fetchedSession) setSession(fetchedSession);
+      }
+    };
+    fetchSession();
+  }, [localDb]);
 
   const handleUnlock = async () => {
+    if (!password.trim()) return;
+    console.log("Unlocking with password:", password);
+    console.log("Unlocking with session:", session);
     setIsUnlocking(true);
-    // Unlock logic will be implemented here
-    setTimeout(() => {
+    try {
+      const hashPassword = await passwordService.hashPassword(password);
+      if (!url) return;
+
+      if (!session) return;
+
+      session.passwordHash = hashPassword.hash;
+
+      await localDb.setSession(session);
+
+      console.log("Unlocking with password:", hashPassword);
+      console.log("Unlocking with session:", session);
+
+      console.log("Unlocking with url:", url);
+
+      // open the url in
+      window.open(url, "_self");
+    } catch (error) {
+      console.error("Error unlocking:", error);
+    } finally {
       setIsUnlocking(false);
-    }, 1000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -39,19 +80,16 @@ export default function UnlockScreen() {
               </div>
 
               <div className="space-y-1">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-xl">{siteFavicon}</span>
-                  <h1 className="text-xl font-semibold text-foreground">
-                    {siteName}
-                  </h1>
-                </div>
+                <h1 className="text-xl font-semibold text-foreground">
+                  {session?.url || "Site"}
+                </h1>
                 <p className="text-sm text-muted-foreground">
                   This site is locked
                 </p>
               </div>
             </div>
 
-            {/* Password Input */}
+            {/* Content */}
             <div className="space-y-3">
               <div className="relative">
                 <Input
@@ -89,7 +127,6 @@ export default function UnlockScreen() {
                 <button
                   type="button"
                   onClick={() => {
-                    // Forgot password logic will be implemented here
                     console.log("Forgot password clicked");
                   }}
                   className="text-sm text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"

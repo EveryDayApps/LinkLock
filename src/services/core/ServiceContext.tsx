@@ -85,7 +85,7 @@ export function ServiceProvider({ children, services }: ServiceProviderProps) {
         await servicesToUse.ruleManager.initialize();
       } else {
         console.log(
-          "[ServiceContext] No master password found, skipping manager initialization"
+          "[ServiceContext] No master password found, skipping manager initialization",
         );
       }
 
@@ -125,7 +125,7 @@ export function useServices(): ServicesWithReinitialize {
   if (!services) {
     throw new Error(
       "useServices must be used within a ServiceProvider. " +
-        "Make sure your component is wrapped with <ServiceProvider>."
+        "Make sure your component is wrapped with <ServiceProvider>.",
     );
   }
 
@@ -173,14 +173,6 @@ export function useUnlockSessionManager() {
 }
 
 /**
- * Hook to access StorageService
- */
-export function useStorageService() {
-  const { storageService } = useServices();
-  return storageService;
-}
-
-/**
  * Hook to access Database
  */
 export function useDatabase() {
@@ -211,4 +203,11 @@ export function useEncryptionService() {
 export function useReinitializeServices() {
   const { reinitialize } = useServices();
   return reinitialize;
+}
+
+//LinkLockLocalDb
+
+export function useLocalDb() {
+  const { localDb } = useServices();
+  return localDb;
 }

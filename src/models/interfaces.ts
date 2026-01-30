@@ -13,10 +13,10 @@
 // ============================================
 
 import type {
-  LockOptions,
   LocalStorageLockOptions,
+  LockOptions,
   RedirectOptions,
-  RuleAction,
+  RuleAction
 } from "./enums";
 
 // ============================================
@@ -191,72 +191,6 @@ export interface LocalStorageCore {
   currentProfileId: string;
 }
 
-/**
- * Complete local storage data structure
- * Represents all LinkLock data in chrome.storage.local
- */
-export interface LocalStorageData {
-  core: LocalStorageCore;
-  rules: LocalStorageRule[];
-}
-
-// ============================================
-// Conversion Utilities
-// Transform between IndexedDB and LocalStorage types
-// ============================================
-
-/**
- * Convert a full LinkRule to a LocalStorageRule
- * Strips metadata and converts nested options
- */
-export function toLocalStorageRule(rule: LinkRule): LocalStorageRule {
-  const localRule: LocalStorageRule = {
-    id: rule.id,
-    urlPattern: rule.urlPattern,
-    action: rule.action,
-    applyToAllSubdomains: rule.applyToAllSubdomains,
-    enabled: rule.enabled,
-  };
-
-  // Convert lock options (strip plain password)
-  if (rule.action === "lock" && rule.lockOptions) {
-    localRule.lockOptions = {
-      lockMode: rule.lockOptions.lockMode,
-    };
-
-    if (
-      rule.lockOptions.lockMode === "timed_unlock" &&
-      rule.lockOptions.timedDuration !== undefined
-    ) {
-      localRule.lockOptions.timedDuration = rule.lockOptions.timedDuration;
-    }
-
-    if (rule.lockOptions.customPasswordHash) {
-      localRule.lockOptions.customPasswordHash =
-        rule.lockOptions.customPasswordHash;
-    }
-  }
-
-  // Flatten redirect options
-  if (rule.action === "redirect" && rule.redirectOptions?.redirectUrl) {
-    localRule.redirectUrl = rule.redirectOptions.redirectUrl;
-  }
-
-  return localRule;
-}
-
-/**
- * Convert multiple LinkRules to LocalStorageRules
- * Filters by profile and enabled status
- */
-export function toLocalStorageRules(
-  rules: LinkRule[],
-  profileId: string
-): LocalStorageRule[] {
-  return rules
-    .filter((rule) => rule.profileIds.includes(profileId) && rule.enabled)
-    .map(toLocalStorageRule);
-}
 
 // ============================================
 // Legacy Types (for backward compatibility)
@@ -278,8 +212,12 @@ export interface StorageData {
   };
 }
 
+
+
+
 // ============================================
 // Re-export enums for convenience
 // ============================================
 
-export type { LockMode, LockOptions, LocalStorageLockOptions, RedirectOptions, RuleAction } from "./enums";
+export type { LocalStorageLockOptions, LockMode, LockOptions, RedirectOptions, RuleAction } from "./enums";
+

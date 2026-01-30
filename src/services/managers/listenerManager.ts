@@ -3,13 +3,13 @@
 // Provides a reusable pattern for managing event listeners
 // ============================================
 
+import { syncDbChangeToBackground } from "@/background/BrowserUtils";
 import type {
   DBChangeCallback,
   EncryptedProfile,
   MasterPasswordData,
   StoredRule,
 } from "@/models/types";
-import { syncDbChangeToBackground } from "@/utils/browser_utils";
 import { listenerLogger } from "@/utils/logger";
 import type { EntityTable } from "dexie";
 

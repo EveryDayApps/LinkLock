@@ -1,6 +1,7 @@
 import { useAuthManager } from "@/services/core";
+import { localDb } from "@/services/database/local_lb";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Eye, EyeOff, Key, User as UserIcon } from "lucide-react";
+import { Check, Eye, EyeOff, Key, Trash2, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MasterPasswordSetup } from "../components/MasterPasswordSetup";
 import { Button } from "../components/ui/button";
@@ -75,6 +76,10 @@ export function SettingsScreen() {
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Clear cache states
+  const [isClearingCache, setIsClearingCache] = useState(false);
+  const [cacheCleared, setCacheCleared] = useState(false);
+
   useEffect(() => {
     const checkMasterPassword = async () => {
       const hasPassword = await authManager.hasMasterPassword();
@@ -134,6 +139,21 @@ export function SettingsScreen() {
     }
 
     setIsSubmitting(false);
+  };
+
+  const handleClearCache = async () => {
+    setIsClearingCache(true);
+    setCacheCleared(false);
+
+    try {
+      await localDb.clearAllSessions();
+      setCacheCleared(true);
+      setTimeout(() => setCacheCleared(false), 3000);
+    } catch (err) {
+      console.error("Failed to clear cache:", err);
+    } finally {
+      setIsClearingCache(false);
+    }
   };
 
   return (
@@ -370,6 +390,53 @@ export function SettingsScreen() {
             </Card>
           </motion.div>
         )}
+
+        {/* Clear Cache Section */}
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Clear Cache
+              </CardTitle>
+              <CardDescription>
+                Clear all active sessions and cached data. This will log you out
+                of all unlocked sites.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <AnimatePresence mode="wait">
+                  {cacheCleared && (
+                    <motion.div
+                      key="cache-success"
+                      variants={messageVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      Cache cleared successfully!
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  <Button
+                    variant="secondary"
+                    onClick={handleClearCache}
+                    disabled={isClearingCache}
+                    className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {isClearingCache ? "Clearing cache..." : "Clear All Cache"}
+                  </Button>
+                </motion.div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </motion.div>
   );

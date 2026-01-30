@@ -30,6 +30,10 @@
       "tabs",
       "<all_urls>"
    ],
+   "web_accessible_resources": [
+      "unlock.html",
+      "assets/*"
+   ],
    "browser_specific_settings": {
       "gecko": {
          "id": "linklock@example.com",

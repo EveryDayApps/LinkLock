@@ -3,6 +3,7 @@
 // Central repository for all TypeScript types used across the application
 // ============================================
 
+import type { LinkLockLocalDb } from "@/services/database/local_lb";
 import type { AuthManager } from "../services/authManager";
 import type { LinkLockDatabase } from "../services/database/db";
 import type { EncryptionService } from "../services/encryption";
@@ -245,6 +246,7 @@ export interface Services {
 
   // Database
   db: LinkLockDatabase;
+  localDb: LinkLockLocalDb;
 }
 
 /**

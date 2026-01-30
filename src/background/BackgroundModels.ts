@@ -10,6 +10,7 @@ import type {
   MasterPasswordData,
   StoredRule,
 } from "@/models/types";
+import type { WebNavigation } from "webextension-polyfill-ts";
 
 // ============================================
 // Table and Operation Types
@@ -235,3 +236,17 @@ export type {
   StoredRule
 };
 
+
+
+
+export type NavigationDetails =
+  WebNavigation.OnCommittedDetailsType & {
+    documentId?: string;
+    documentLifecycle?: string;
+    frameType?: string;
+    parentFrameId?: number;
+    parentDocumentId?: string;
+    processId?: number;
+    transitionType?: string;
+    transitionQualifiers?: string[];
+  };

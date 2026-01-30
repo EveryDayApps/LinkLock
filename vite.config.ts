@@ -25,39 +25,40 @@ export default defineConfig(({ mode }): UserConfig => {
         ...(isExtension
           ? {}
           : {
-              "webextension-polyfill-ts": resolve(
-                __dirname,
-                "src/utils/browser-polyfill-mock.ts",
-              ),
-            }),
+            "webextension-polyfill-ts": resolve(
+              __dirname,
+              "src/utils/browser-polyfill-mock.ts",
+            ),
+          }),
       },
     },
 
     publicDir: isExtension ? false : "public",
     build: isExtension
       ? {
-          outDir: mode === "chrome" ? "dist_chrome" : "dist_firefox",
-          rollupOptions: {
-            input: {
-              popup: resolve(__dirname, "index.html"),
-              background: resolve(__dirname, "src/background/BrowserApi.ts"),
-            },
-
-            output: {
-              entryFileNames: (chunkInfo) => {
-                // Background script should be at root
-                if (chunkInfo.name === "background") {
-                  return "background.js";
-                }
-                return "assets/[name]-[hash].js";
-              },
-              // Disable code splitting - inline everything
-              inlineDynamicImports: false,
-            },
-            // Prevent sharing modules between entries
-            preserveEntrySignatures: "strict",
+        outDir: mode === "chrome" ? "dist_chrome" : "dist_firefox",
+        rollupOptions: {
+          input: {
+            popup: resolve(__dirname, "index.html"),
+            unlock: resolve(__dirname, "unlock.html"),
+            background: resolve(__dirname, "src/background/BrowserApi.ts"),
           },
-        }
+
+          output: {
+            entryFileNames: (chunkInfo) => {
+              // Background script should be at root
+              if (chunkInfo.name === "background") {
+                return "background.js";
+              }
+              return "assets/[name]-[hash].js";
+            },
+            // Disable code splitting - inline everything
+            inlineDynamicImports: false,
+          },
+          // Prevent sharing modules between entries
+          preserveEntrySignatures: "strict",
+        },
+      }
       : undefined,
   };
 });
