@@ -1,12 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Database,
-  FileText,
-  Info,
-  Lock,
-  Menu,
-  Settings,
-  User,
+    Database,
+    FileText,
+    Info,
+    Lock,
+    Menu,
+    Settings,
+    User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MasterPasswordGuard } from "./components/MasterPasswordGuard";
@@ -90,7 +90,7 @@ function App() {
 
   return (
     <MasterPasswordGuard>
-      <div className="dark min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-background text-foreground">
         <div className="relative h-screen">
           <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
             {/* Main Content */}
