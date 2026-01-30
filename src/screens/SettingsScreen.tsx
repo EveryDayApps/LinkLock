@@ -79,6 +79,7 @@ export function SettingsScreen() {
   // Clear cache states
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [cacheCleared, setCacheCleared] = useState(false);
+  const [cacheError, setCacheError] = useState("");
 
   useEffect(() => {
     const checkMasterPassword = async () => {
@@ -144,13 +145,15 @@ export function SettingsScreen() {
   const handleClearCache = async () => {
     setIsClearingCache(true);
     setCacheCleared(false);
+    setCacheError("");
 
     try {
       await localDb.clearAllSessions();
       setCacheCleared(true);
       setTimeout(() => setCacheCleared(false), 3000);
     } catch (err) {
-      console.error("Failed to clear cache:", err);
+      setCacheError("Failed to clear cache. Please try again.");
+      setTimeout(() => setCacheError(""), 3000);
     } finally {
       setIsClearingCache(false);
     }
@@ -406,33 +409,28 @@ export function SettingsScreen() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <AnimatePresence mode="wait">
-                  {cacheCleared && (
-                    <motion.div
-                      key="cache-success"
-                      variants={messageVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2"
-                    >
-                      <Check className="w-4 h-4" />
-                      Cache cleared successfully!
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {cacheCleared && (
+                  <div className="bg-green-500/10 text-green-500 px-4 py-3 rounded-md text-sm flex items-center gap-2">
+                    <Check className="w-4 h-4" />
+                    Cache cleared successfully!
+                  </div>
+                )}
 
-                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                  <Button
-                    variant="secondary"
-                    onClick={handleClearCache}
-                    disabled={isClearingCache}
-                    className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    {isClearingCache ? "Clearing cache..." : "Clear All Cache"}
-                  </Button>
-                </motion.div>
+                {cacheError && (
+                  <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
+                    {cacheError}
+                  </div>
+                )}
+
+                <Button
+                  variant="secondary"
+                  onClick={handleClearCache}
+                  disabled={isClearingCache}
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {isClearingCache ? "Clearing cache..." : "Clear All Cache"}
+                </Button>
               </div>
             </CardContent>
           </Card>

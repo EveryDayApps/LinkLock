@@ -1,40 +1,31 @@
-import type { ActiveTabSession } from "@/services/database/local_lb";
 import { DB_CHANGE_MESSAGE_TYPE } from "../models/constants";
-import type { LinkRule, TypedDBChangePayload } from "./BackgroundModels";
+import type { TypedDBChangePayload } from "./BackgroundModels";
 
 
 
 
 
 
-export class BrowserUtils {
-  // filter domain from a given url
-  extractDomainAndVerify(url: string): string | null {
-    try {
-      const parsed = new URL(url);
 
-      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-        return null;
-      }
+// filter domain from a given url
+export function extractDomainAndVerify(url: string): string | null {
+  try {
+    const parsed = new URL(url);
 
-      return parsed.hostname;
-    } catch {
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return null;
     }
-  }
 
-
-
-  // LinkRule -> ActiveTabSession
-  getActiveTabSessionFromRule(rule: LinkRule, tabId: number, actualUrl: string): ActiveTabSession {
-    return {
-      tabId: tabId,
-      ruleId: rule.id,
-      action: rule.action,
-      url: actualUrl,
-    };
+    return parsed.hostname;
+  } catch {
+    return null;
   }
 }
+
+
+
+
+
 
 
 

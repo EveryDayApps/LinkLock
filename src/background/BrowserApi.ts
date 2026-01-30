@@ -32,15 +32,6 @@ export class BrowserApi extends BaseBrowserApi {
   }
 
   setupNavigationListener(): void {
-    browser.webNavigation.onBeforeNavigate.addListener(
-      this.manager.onBeforeNavigate,
-    );
-
-    browser.webNavigation.onBeforeNavigate.addListener(
-      this.manager.onBeforeNavigate,
-    );
-
-    //onCommitted
     browser.webNavigation.onCommitted.addListener(
       this.manager.onCommitted,
     );

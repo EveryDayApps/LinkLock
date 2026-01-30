@@ -8,7 +8,7 @@ export interface ActiveTabSession {
   action: RuleAction;
   url: string;
   unlockDuration?: UnlockDuration;
-  passwordHash?: string;
+  password?: string;
   unlockedAt?: number;
 }
 

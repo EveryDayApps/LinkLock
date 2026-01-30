@@ -4,13 +4,15 @@
 // Uses BackgroundStateStore for state management and event handling
 // ============================================
 
+import { AuthManager } from "@/services/authManager";
+import { db } from "@/services/database";
 import { LinkLockLocalDb } from "@/services/database/local_lb";
 import { backgroundLogger } from "@/utils/logger";
 import { browser } from "webextension-polyfill-ts";
-import type { WebNavigation } from "webextension-polyfill-ts/lib/webNavigation";
-import type { LinkRule, NavigationDetails } from "./BackgroundModels";
+import type { NavigationDetails } from "./BackgroundModels";
 import { BackgroundStateStore } from "./BackgroundStateStore";
-import { BrowserUtils } from "./BrowserUtils";
+import { extractDomainAndVerify } from "./BrowserUtils";
+
 
 // Re-export BackgroundState for convenience
 export type { BackgroundState } from "./BackgroundStateStore";
@@ -25,7 +27,8 @@ export class BackgroundManager {
   // Reference to the state store
   private readonly store = new BackgroundStateStore();
   private readonly localDb = new LinkLockLocalDb();
-  private readonly utils = new BrowserUtils();
+  private readonly authManager = new AuthManager(db)
+
 
   // ============================================
   // Initialization
@@ -79,18 +82,6 @@ export class BackgroundManager {
   }
 
 
-  onBeforeRequest = async (
-    details: WebNavigation.OnBeforeNavigateDetailsType,
-  ) => {
-    // // Placeholder for onBeforeRequest logic
-
-    // backgroundLogger.info("onBeforeRequest", details);
-
-
-
-  }
-
-
   //onCommitted
   onCommitted = async (
     details: NavigationDetails,
@@ -104,7 +95,7 @@ export class BackgroundManager {
     backgroundLogger.info("url:", details.url);
 
     // extract domain from details.url
-    const url = this.utils.extractDomainAndVerify(details.url);
+    const url = extractDomainAndVerify(details.url);
 
     backgroundLogger.info("extracted domain:", url);
 
@@ -147,118 +138,21 @@ export class BackgroundManager {
       backgroundLogger.info(`[BackgroundManager] Active session found for ${details.url}:`, activeSession);
 
       // If there's an active session, we can skip handling the rule action
-      const hashPassword = activeSession.passwordHash;
+      const hashPassword = activeSession.password;
 
-      backgroundLogger.info(`[BackgroundManager] Active session password hash:`, hashPassword);
-
-      if (hashPassword) {
-        const rulePasswordHash = this.getPasswordHashForRule(matchingRule);
-
-        backgroundLogger.info(`[BackgroundManager] Rule password hash:`, rulePasswordHash);
-        if (rulePasswordHash && hashPassword === rulePasswordHash) {
-          // open the url in the tab
-          backgroundLogger.info(`[BackgroundManager] Active session found for ${details.url}, allowing navigation.`);
-          return;
-        }
+      const isPasswordValid = await this.authManager.verifyMasterPassword(atob(hashPassword || ""));
+      if (isPasswordValid.success) {
+        backgroundLogger.info(`[BackgroundManager] Active session password is valid for ${details.url}, allowing navigation.`);
+        return;
       }
-    } else {
-      // Handle the rule action
-      const activeTabSession = this.utils.getActiveTabSessionFromRule(matchingRule, details.tabId, details.url);
-      await this.localDb.setSession(activeTabSession);
-
-      const session = await this.localDb.getSession(details.url);
-
-      backgroundLogger.info(`[BackgroundManager] Created new session for ${details.url}:`, session);
-
-      const urlBase64 = btoa(details.url);
-      backgroundLogger.info("Encoded URL:", urlBase64);
-
-      const unlockUrl = browser.runtime.getURL("unlock.html") + "?url=" + urlBase64;
-      backgroundLogger.info("Unlock URL:", unlockUrl);
-      await browser.tabs.update(details.tabId, { url: `${unlockUrl}` });
     }
-
-    return;
+    // Handle the rule action
+    const activeTabSession = { tabId: details.tabId, ruleId: matchingRule.id, action: matchingRule.action, url: details.url }
+    await this.localDb.setSession(activeTabSession);
+    const urlBase64 = btoa(details.url);
+    const unlockUrl = browser.runtime.getURL("unlock.html") + "?url=" + urlBase64;
+    await browser.tabs.update(details.tabId, { url: `${unlockUrl}` });
 
   }
-
-
-
-  private getPasswordHashForRule(rule: LinkRule): string | null {
-    if (rule.lockOptions?.customPasswordHash) {
-      return rule.lockOptions.customPasswordHash;
-    }
-
-    const masterPasswordHash = this.store.masterPassword?.encryptedPasswordHash;
-    if (masterPasswordHash) return masterPasswordHash;
-
-    return null;
-  }
-
-
-
-
-  // ============================================
-  // Navigation Handler
-  // ============================================
-
-
-
-  onBeforeNavigate = async (
-    details: WebNavigation.OnBeforeNavigateDetailsType,
-  ) => {
-    // backgroundLogger.info("onBeforeNavigate", details);
-
-
-    // const url = details.url;
-
-    // if (url.includes("google.com")) {
-    //   backgroundLogger.info("Blocking navigation to Google:", url);
-    //   // await browser.tabs.update(details.tabId, { url: "https://www.bing.com" });
-    // }
-
-
-    // const url = details.url;
-
-    //     if (url.includes("x.com")) {
-    //       browser.storage.local.set({ "url_visited": url });
-    //       const unlockUrl = browser.runtime.getURL("unlock.html");
-    //       backgroundLogger.info("Unlock URL:", unlockUrl);
-    //       await browser.tabs.update(details.tabId, { url: `${unlockUrl}` });
-    //     }
-
-
-
-
-    // // Only process main frame navigations
-    // if (details.frameId !== 0) {
-    //   return;
-    // }
-
-    // const selectedProfile = this.store.selectedProfile;
-
-    // if (!selectedProfile) {
-    //   backgroundLogger.warn(`[BackgroundManager] No selected profile for navigation to ${details.url}`);
-    //   return;
-    // }
-
-    // // Get rules for the selected profile
-    // const rules = this.store.rules.filter((rule) =>
-    //   rule.profileIds.includes(selectedProfile.id) && rule.enabled
-    // );
-
-    // backgroundLogger.info(`[BackgroundManager] Processing navigation to ${details.url} with ${rules.length} active rules`);
-
-    // // Find a matching rule for this URL
-    // const matchingRule = this.findMatchingRule(details.url, rules);
-
-    // if (!matchingRule) return;
-
-    // backgroundLogger.info(`[BackgroundManager] Matched rule for ${details.url}:`, matchingRule);
-
-    // // Handle the rule action
-    // await this.handleRuleAction(details.tabId, details.url, matchingRule);
-  };
-
 
 }

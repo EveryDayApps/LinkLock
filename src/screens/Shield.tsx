@@ -1,5 +1,9 @@
 import { usePasswordService } from "@/services/core";
-import { useLocalDb } from "@/services/core/ServiceContext";
+import {
+  useAuthManager,
+  useDatabase,
+  useLocalDb,
+} from "@/services/core/ServiceContext";
 import type { ActiveTabSession } from "@/services/database/local_lb";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,11 +15,14 @@ export default function UnlockScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [error, setError] = useState("");
   const [url, setUrl] = useState<string | null>(null);
   //ActiveTabSession
   const [session, setSession] = useState<ActiveTabSession | null>(null);
   const passwordService = usePasswordService();
+  const db = useDatabase();
   const localDb = useLocalDb();
+  const authManager = useAuthManager();
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -34,29 +41,20 @@ export default function UnlockScreen() {
   }, [localDb]);
 
   const handleUnlock = async () => {
-    if (!password.trim()) return;
-    console.log("Unlocking with password:", password);
-    console.log("Unlocking with session:", session);
+    if (!url || !session || !password.trim()) return;
     setIsUnlocking(true);
+    setError("");
     try {
-      const hashPassword = await passwordService.hashPassword(password);
-      if (!url) return;
-
-      if (!session) return;
-
-      session.passwordHash = hashPassword.hash;
-
+      const result = await authManager.verifyMasterPassword(password);
+      if (!result.success) {
+        setError("Invalid password. Please try again.");
+        return;
+      }
+      session.password = btoa(password);
       await localDb.setSession(session);
-
-      console.log("Unlocking with password:", hashPassword);
-      console.log("Unlocking with session:", session);
-
-      console.log("Unlocking with url:", url);
-
-      // open the url in
       window.open(url, "_self");
-    } catch (error) {
-      console.error("Error unlocking:", error);
+    } catch (err) {
+      setError("An error occurred. Please try again.");
     } finally {
       setIsUnlocking(false);
     }
@@ -96,7 +94,10 @@ export default function UnlockScreen() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError("");
+                  }}
                   onKeyDown={handleKeyDown}
                   autoFocus
                   className="pr-10"
@@ -114,6 +115,12 @@ export default function UnlockScreen() {
                   )}
                 </button>
               </div>
+
+              {error && (
+                <div className="bg-destructive/10 text-destructive px-3 py-2 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
 
               <Button
                 className="w-full"
