@@ -1,9 +1,4 @@
-import { usePasswordService } from "@/services/core";
-import {
-  useAuthManager,
-  useDatabase,
-  useLocalDb,
-} from "@/services/core/ServiceContext";
+import { useAuthManager, useLocalDb } from "@/services/core/ServiceContext";
 import type { ActiveTabSession } from "@/services/database/local_lb";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -17,10 +12,7 @@ export default function UnlockScreen() {
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState("");
   const [url, setUrl] = useState<string | null>(null);
-  //ActiveTabSession
   const [session, setSession] = useState<ActiveTabSession | null>(null);
-  const passwordService = usePasswordService();
-  const db = useDatabase();
   const localDb = useLocalDb();
   const authManager = useAuthManager();
 

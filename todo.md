@@ -1,0 +1,5 @@
+- change name to Secure Link
+- check out other similar extensions for inspiration
+- add icon for the extension
+- write description for the extension
+- test the extension in different browsers
