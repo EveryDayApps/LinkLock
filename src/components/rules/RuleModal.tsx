@@ -75,23 +75,30 @@ const errorVariants = {
   },
 };
 
-interface AddRuleModalProps {
+interface RuleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddRule: (
+  mode: "add" | "edit";
+  rule?: LinkRule | null;
+  onSave: (
     rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">,
+    ruleId?: string,
   ) => Promise<{ success: boolean; error?: string }>;
   profiles: Profile[];
-  activeProfileId: string | null;
+  activeProfileId?: string | null;
 }
 
-export function AddRuleModal({
+export function RuleModal({
   open,
   onOpenChange,
-  onAddRule,
+  mode,
+  rule,
+  onSave,
   profiles,
   activeProfileId,
-}: AddRuleModalProps) {
+}: RuleModalProps) {
+  const isEditMode = mode === "edit";
+
   const [urlPattern, setUrlPattern] = useState("");
   const [action, setAction] = useState<RuleAction>("lock");
   const [applyToAllSubdomains, setApplyToAllSubdomains] = useState(false);
@@ -102,6 +109,12 @@ export function AddRuleModal({
   const [lockMode, setLockMode] = useState<LockMode>("always_ask");
   const [timedDurationInput, setTimedDurationInput] = useState<string>("5");
   const [customPassword, setCustomPassword] = useState("");
+
+  // Redirect options
+  const [redirectUrl, setRedirectUrl] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Helper to parse URL to domain
   const parseUrlToDomain = (input: string): string => {
@@ -132,29 +145,13 @@ export function AddRuleModal({
     }
   };
 
-  // Redirect options
-  const [redirectUrl, setRedirectUrl] = useState("");
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (open) {
-      // Clear any previous errors when modal opens
-      setError("");
-
-      // Default to active profile, or "default" profile, or first available profile
-      const defaultProfileId =
-        activeProfileId ||
-        profiles.find((p) => p.id === "default")?.id ||
-        profiles[0]?.id;
-
-      if (defaultProfileId) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSelectedProfiles([defaultProfileId]);
-      }
-    }
-  }, [open, activeProfileId, profiles]);
+  const getDefaultProfileId = () => {
+    return (
+      activeProfileId ||
+      profiles.find((p) => p.id === "default")?.id ||
+      profiles[0]?.id
+    );
+  };
 
   const resetForm = () => {
     setUrlPattern("");
@@ -162,13 +159,9 @@ export function AddRuleModal({
     setApplyToAllSubdomains(false);
     setApplyToAllProfiles(true);
 
-    // Default to active profile, or "default" profile, or first available profile
-    const defaultProfileId =
-      activeProfileId ||
-      profiles.find((p) => p.id === "default")?.id ||
-      profiles[0]?.id;
-
+    const defaultProfileId = getDefaultProfileId();
     setSelectedProfiles(defaultProfileId ? [defaultProfileId] : []);
+
     setLockMode("always_ask");
     setTimedDurationInput("5");
     setCustomPassword("");
@@ -176,6 +169,49 @@ export function AddRuleModal({
     setError("");
     setLoading(false);
   };
+
+  const populateFromRule = (ruleData: LinkRule) => {
+    setUrlPattern(ruleData.urlPattern);
+    setAction(ruleData.action);
+    setApplyToAllSubdomains(ruleData.applyToAllSubdomains);
+    setApplyToAllProfiles(ruleData.applyToAllProfiles ?? false);
+    setSelectedProfiles(ruleData.profileIds || []);
+
+    if (ruleData.lockOptions) {
+      setLockMode(ruleData.lockOptions.lockMode);
+      setTimedDurationInput(String(ruleData.lockOptions.timedDuration || 5));
+      setCustomPassword(ruleData.lockOptions.customPassword || "");
+    } else {
+      setLockMode("always_ask");
+      setTimedDurationInput("5");
+      setCustomPassword("");
+    }
+
+    if (ruleData.redirectOptions) {
+      setRedirectUrl(ruleData.redirectOptions.redirectUrl);
+    } else {
+      setRedirectUrl("");
+    }
+
+    setError("");
+  };
+
+  useEffect(() => {
+    if (open) {
+      setError("");
+
+      if (isEditMode && rule) {
+        populateFromRule(rule);
+      } else if (!isEditMode) {
+        // For add mode, set default profile
+        const defaultProfileId = getDefaultProfileId();
+        if (defaultProfileId) {
+          setSelectedProfiles([defaultProfileId]);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, rule, isEditMode]);
 
   const handleSubmit = async () => {
     setError("");
@@ -208,13 +244,13 @@ export function AddRuleModal({
 
     setLoading(true);
 
-    const newRule: Omit<LinkRule, "id" | "createdAt" | "updatedAt"> = {
+    const ruleData: Omit<LinkRule, "id" | "createdAt" | "updatedAt"> = {
       urlPattern: urlPattern.trim(),
       action,
       applyToAllSubdomains,
       applyToAllProfiles,
       profileIds: applyToAllProfiles ? [] : selectedProfiles,
-      enabled: true, // Always enabled by default, user can toggle from list
+      enabled: isEditMode ? (rule?.enabled ?? true) : true,
       lockOptions:
         action === "lock"
           ? {
@@ -232,13 +268,15 @@ export function AddRuleModal({
           : undefined,
     };
 
-    const result = await onAddRule(newRule);
+    const result = await onSave(ruleData, isEditMode ? rule?.id : undefined);
 
     if (result.success) {
-      resetForm();
+      if (!isEditMode) {
+        resetForm();
+      }
       onOpenChange(false);
     } else {
-      setError(result.error || "Failed to create rule");
+      setError(result.error || `Failed to ${isEditMode ? "update" : "create"} rule`);
     }
 
     setLoading(false);
@@ -256,6 +294,13 @@ export function AddRuleModal({
     }
   };
 
+  const handleClose = () => {
+    if (!isEditMode) {
+      resetForm();
+    }
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -263,9 +308,11 @@ export function AddRuleModal({
         onKeyDown={handleKeyDown}
       >
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Add New Rule</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit Rule" : "Add New Rule"}</DialogTitle>
           <DialogDescription>
-            Create a new rule to lock, block, or redirect a website
+            {isEditMode
+              ? "Update the configuration for this rule"
+              : "Create a new rule to lock, block, or redirect a website"}
           </DialogDescription>
         </DialogHeader>
 
@@ -533,18 +580,17 @@ export function AddRuleModal({
         </div>
 
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              resetForm();
-              onOpenChange(false);
-            }}
-            disabled={loading}
-          >
+          <Button variant="secondary" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Creating..." : "Create Rule"}
+            {loading
+              ? isEditMode
+                ? "Updating..."
+                : "Creating..."
+              : isEditMode
+                ? "Update Rule"
+                : "Create Rule"}
           </Button>
         </DialogFooter>
       </DialogContent>

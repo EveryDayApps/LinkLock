@@ -14,8 +14,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { LinkRule, Profile } from "@/models/interfaces";
 import { useProfileManager, useRuleManager } from "@/services/core";
-import { AddRuleModal } from "../components/rules/AddRuleModal";
-import { EditRuleModal } from "../components/rules/EditRuleModal";
+import { RuleModal } from "../components/rules/RuleModal";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import {
@@ -146,21 +145,14 @@ export function RulesScreen() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleAddRule = async (
+  const handleSaveRule = async (
     rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">,
+    ruleId?: string,
   ): Promise<{ success: boolean; error?: string }> => {
-    const result = await ruleManager.createRule(rule);
-    if (result.success) {
-      loadData();
-    }
-    return result;
-  };
+    const result = ruleId
+      ? await ruleManager.updateRule(ruleId, rule)
+      : await ruleManager.createRule(rule);
 
-  const handleUpdateRule = async (
-    ruleId: string,
-    updates: Partial<Omit<LinkRule, "id" | "createdAt" | "updatedAt">>,
-  ): Promise<{ success: boolean; error?: string }> => {
-    const result = await ruleManager.updateRule(ruleId, updates);
     if (result.success) {
       loadData();
     }
@@ -406,19 +398,21 @@ export function RulesScreen() {
         )}
       </motion.div>
 
-      <AddRuleModal
+      <RuleModal
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
-        onAddRule={handleAddRule}
+        mode="add"
+        onSave={handleSaveRule}
         profiles={profiles}
         activeProfileId={activeProfileId}
       />
 
-      <EditRuleModal
+      <RuleModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
+        mode="edit"
         rule={selectedRule}
-        onUpdateRule={handleUpdateRule}
+        onSave={handleSaveRule}
         profiles={profiles}
       />
 
