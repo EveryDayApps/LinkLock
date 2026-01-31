@@ -1,3 +1,4 @@
+import { URL_QUERY_PATH_NAME } from "@/models/constants";
 import { useAuthManager, useLocalDb } from "@/services/core/ServiceContext";
 import type { ActiveTabSession } from "@/services/database/local_lb";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
@@ -19,7 +20,7 @@ export default function UnlockScreen() {
   useEffect(() => {
     const fetchSession = async () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const urlParam = urlParams.get("url");
+      const urlParam = urlParams.get(URL_QUERY_PATH_NAME);
       if (urlParam) {
         const decodedUrl = atob(urlParam);
         setUrl(decodedUrl);

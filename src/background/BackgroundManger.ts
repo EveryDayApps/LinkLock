@@ -4,6 +4,7 @@
 // Uses BackgroundStateStore for state management and event handling
 // ============================================
 
+import { URL_QUERY_PATH_NAME } from "@/models/constants";
 import { AuthManager } from "@/services/authManager";
 import { db } from "@/services/database";
 import { LinkLockLocalDb } from "@/services/database/local_lb";
@@ -120,7 +121,7 @@ export class BackgroundManager {
 
 
     const rules = this.store.rules.filter((rule) =>
-      rule.profileIds.includes(selectedProfile.id) && rule.enabled && rule.urlPattern === url
+      (rule.profileIds.includes(selectedProfile.id) || rule.applyToAllProfiles) && rule.enabled && rule.urlPattern === url
     );
 
     backgroundLogger.info(`[BackgroundManager] Processing navigation to ${details.url} with ${rules.length} active rules`);
@@ -191,7 +192,7 @@ export class BackgroundManager {
     url: string,
   ): Promise<void> => {
     const urlBase64 = btoa(url);
-    const unlockUrl = browser.runtime.getURL("unlock.html") + "?url=" + urlBase64;
+    const unlockUrl = browser.runtime.getURL("unlock.html") + `?${URL_QUERY_PATH_NAME}=` + urlBase64;
     await browser.tabs.update(tabId, { url: `${unlockUrl}` });
   }
 

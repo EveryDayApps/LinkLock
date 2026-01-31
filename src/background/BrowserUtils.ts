@@ -12,15 +12,20 @@ export function extractDomainAndVerify(url: string): string | null {
   try {
     const parsed = new URL(url);
 
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      return null;
-    }
+    // allow only real web protocols
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
 
-    return parsed.hostname;
+    let host = parsed.hostname.toLowerCase();
+
+    // remove www.
+    if (host.startsWith("www.")) host = host.slice(4);
+
+    return host;
   } catch {
     return null;
   }
 }
+
 
 
 
