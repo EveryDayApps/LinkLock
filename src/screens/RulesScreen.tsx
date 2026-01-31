@@ -7,6 +7,7 @@ import {
   Lock,
   MoreVertical,
   Plus,
+  Search,
   Shield,
   Trash,
   XCircle,
@@ -33,6 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import { Input } from "../components/ui/input";
 import {
   Select,
   SelectContent,
@@ -114,6 +116,7 @@ export function RulesScreen() {
   const [ruleToDelete, setRuleToDelete] = useState<LinkRule | null>(null);
   const [filterProfileId, setFilterProfileId] = useState<string>("all");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadData = useCallback(async () => {
     const allRules = await ruleManager.getAllRules();
@@ -239,10 +242,15 @@ export function RulesScreen() {
 
   const effectiveFilterId = filterProfileId;
 
-  const filteredRules =
-    effectiveFilterId === "all"
-      ? rules
-      : rules.filter((rule) => rule.profileIds.includes(effectiveFilterId));
+  const filteredRules = rules.filter((rule) => {
+    const matchesProfile =
+      effectiveFilterId === "all" ||
+      rule.profileIds.includes(effectiveFilterId);
+    const matchesSearch =
+      !searchQuery ||
+      rule.urlPattern.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesProfile && matchesSearch;
+  });
 
   return (
     <div className="h-full flex flex-col p-8 max-w-4xl mx-auto">
@@ -263,7 +271,16 @@ export function RulesScreen() {
       </div>
 
       <div className="flex items-center gap-3 mb-4 flex-shrink-0">
-        <Filter className="w-4 h-4 text-muted-foreground" />
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search URLs..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Filter className="w-4 h-4 text-muted-foreground ml-auto" />
         <Select value={effectiveFilterId} onValueChange={setFilterProfileId}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by profile" />
@@ -278,7 +295,7 @@ export function RulesScreen() {
             ))}
           </SelectContent>
         </Select>
-        {effectiveFilterId !== "all" && (
+        {(effectiveFilterId !== "all" || searchQuery) && (
           <span className="text-sm text-muted-foreground">
             {filteredRules.length} rule{filteredRules.length !== 1 ? "s" : ""}
           </span>
@@ -303,106 +320,108 @@ export function RulesScreen() {
               exit="exit"
             >
               <Card
-                className={`border-2 transition-all duration-200 hover:border-primary/50 hover:shadow-md ${
-                  openDropdownId === rule.id ? "border-primary/50 shadow-md" : "border-transparent"
+                className={`border-2 transition-all duration-200 border-input hover:border-white hover:shadow-md ${
+                  openDropdownId === rule.id
+                    ? "border-white shadow-md"
+                    : ""
                 } ${!rule.enabled ? "opacity-60" : ""}`}
               >
-                  <CardContent className="flex items-center justify-center">
-                    <div className="flex items-center justify-between w-full p-2">
-                      <div className="flex items-center gap-4 flex-1">
-                        <motion.div
-                          className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          {getActionIcon(rule.action)}
-                        </motion.div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-foreground">
-                              {rule.urlPattern}
-                            </h3>
-                            {!rule.enabled && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                                Disabled
+                <CardContent className="flex items-center justify-center">
+                  <div className="flex items-center justify-between w-full p-2">
+                    <div className="flex items-center gap-4 flex-1">
+                      <motion.div
+                        className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {getActionIcon(rule.action)}
+                      </motion.div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-foreground">
+                            {rule.urlPattern}
+                          </h3>
+                          {!rule.enabled && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+                              Disabled
+                            </span>
+                          )}
+                          {rule.applyToAllSubdomains && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+                              All Subdomains
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                          <span className="capitalize">{rule.action}</span>
+                          {rule.action === "lock" && (
+                            <>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {getLockModeLabel(rule)}
                               </span>
-                            )}
-                            {rule.applyToAllSubdomains && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
-                                All Subdomains
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                            <span className="capitalize">{rule.action}</span>
-                            {rule.action === "lock" && (
+                            </>
+                          )}
+                          {rule.action === "redirect" &&
+                            rule.redirectOptions && (
                               <>
                                 <span>•</span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {getLockModeLabel(rule)}
+                                <span className="truncate max-w-xs">
+                                  → {rule.redirectOptions.redirectUrl}
                                 </span>
                               </>
                             )}
-                            {rule.action === "redirect" &&
-                              rule.redirectOptions && (
-                                <>
-                                  <span>•</span>
-                                  <span className="truncate max-w-xs">
-                                    → {rule.redirectOptions.redirectUrl}
-                                  </span>
-                                </>
-                              )}
-                            <span>•</span>
-                            <span>{getProfileNames(rule)}</span>
-                          </div>
+                          <span>•</span>
+                          <span>{getProfileNames(rule)}</span>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-2">
-                        <motion.div
-                          whileTap={{ scale: 0.92 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 20,
-                          }}
-                        >
-                          <Switch
-                            checked={rule.enabled}
-                            onCheckedChange={() => handleToggleRule(rule.id)}
-                          />
-                        </motion.div>
-                        <DropdownMenu
-                          open={openDropdownId === rule.id}
-                          onOpenChange={(open) => setOpenDropdownId(open ? rule.id : null)}
-                        >
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => openEditModal(rule)}
-                            >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => openDeleteDialog(rule)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="flex items-center gap-2">
+                      <motion.div
+                        whileTap={{ scale: 0.92 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 20,
+                        }}
+                      >
+                        <Switch
+                          checked={rule.enabled}
+                          onCheckedChange={() => handleToggleRule(rule.id)}
+                        />
+                      </motion.div>
+                      <DropdownMenu
+                        open={openDropdownId === rule.id}
+                        onOpenChange={(open) =>
+                          setOpenDropdownId(open ? rule.id : null)
+                        }
+                      >
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditModal(rule)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => openDeleteDialog(rule)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
         </AnimatePresence>
@@ -428,7 +447,10 @@ export function RulesScreen() {
                 <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                   Create your first rule to start managing website access
                 </p>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
                   <Button onClick={() => setAddModalOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Create Your First Rule
@@ -443,8 +465,14 @@ export function RulesScreen() {
                 <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                   No rules found for the selected profile
                 </p>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button variant="secondary" onClick={() => setFilterProfileId("all")} >
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Button
+                    variant="secondary"
+                    onClick={() => setFilterProfileId("all")}
+                  >
                     Clear Filter
                   </Button>
                 </motion.div>

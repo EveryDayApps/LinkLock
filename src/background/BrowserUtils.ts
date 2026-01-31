@@ -1,11 +1,6 @@
+import { browser } from "@/utils/get-browser";
 import { DB_CHANGE_MESSAGE_TYPE } from "../models/constants";
 import type { TypedDBChangePayload } from "./BackgroundModels";
-
-
-
-
-
-
 
 // filter domain from a given url
 export function extractDomainAndVerify(url: string): string | null {
@@ -13,7 +8,8 @@ export function extractDomainAndVerify(url: string): string | null {
     const parsed = new URL(url);
 
     // allow only real web protocols
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
+      return null;
 
     let host = parsed.hostname.toLowerCase();
 
@@ -25,14 +21,6 @@ export function extractDomainAndVerify(url: string): string | null {
     return null;
   }
 }
-
-
-
-
-
-
-
-
 
 /**
  * Sync database changes to the background script

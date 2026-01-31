@@ -48,14 +48,14 @@ export type {
   TableHandlers,
   TableName,
   TypedDBChangeMessage,
-  TypedDBChangePayload,
+  TypedDBChangePayload
 } from "./BackgroundModels";
 
 // Re-export type guards
 export {
   isMasterPasswordPayload,
   isProfilePayload,
-  isRulePayload,
+  isRulePayload
 } from "./BackgroundModels";
 
 // ============================================

@@ -5,3 +5,4 @@
 - test the extension in different browsers
 - change icons used in the app
 - toggle for encrypting of data
+- when opening the extension ask for master password if not already entered

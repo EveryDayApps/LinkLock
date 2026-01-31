@@ -255,8 +255,8 @@ export function ProfilesTab() {
                 exit="exit"
               >
                 <Card
-                  className={`border-2 transition-all duration-200 hover:border-primary/50 hover:shadow-md ${
-                    openDropdownId === profile.id ? "border-primary/50 shadow-md" : "border-transparent"
+                  className={`border-2 transition-all duration-200 border-input hover:border-white hover:shadow-md ${
+                    openDropdownId === profile.id ? "border-white shadow-md" : ""
                   }`}
                 >
                     <CardContent className="flex items-center justify-center">

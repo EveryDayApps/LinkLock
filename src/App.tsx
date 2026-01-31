@@ -26,8 +26,8 @@ import { SettingsScreen } from "./screens/SettingsScreen";
 const navItems = [
   { id: "rules" as const, label: "Rules", icon: FileText },
   { id: "profiles" as const, label: "Profiles", icon: User },
-  { id: "import-export" as const, label: "Backup", icon: Database },
   { id: "settings" as const, label: "Settings", icon: Settings },
+  { id: "import-export" as const, label: "Backup", icon: Database },
   { id: "about" as const, label: "About", icon: Info },
 ];
 
@@ -59,8 +59,8 @@ function App() {
         const shortcuts: Record<string, ScreenType> = {
           "!": "rules", // Shift+1
           "@": "profiles", // Shift+2
-          "#": "import-export", // Shift+3
-          $: "settings", // Shift+4
+          "#": "settings", // Shift+3
+          $: "import-export", // Shift+4
           "%": "about", // Shift+5
         };
 
