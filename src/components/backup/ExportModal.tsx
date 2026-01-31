@@ -1,3 +1,4 @@
+import type { ExportOptions } from "@/models/types";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
@@ -11,10 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { LinkRule, Profile } from "../../models/interfaces";
-import {
-  ExportImportManager,
-  type ExportOptions,
-} from "../../services/exportImportManager";
+import { ExportImportManager } from "../../services/exportImportManager";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import {
@@ -169,7 +167,7 @@ export function ExportModal({
       password,
       profilesToExport,
       rules,
-      options
+      options,
     );
 
     setProgress(80);
@@ -420,8 +418,8 @@ export function ExportModal({
           {progress < 50
             ? "Preparing data..."
             : progress < 80
-            ? "Encrypting backup..."
-            : "Finalizing..."}
+              ? "Encrypting backup..."
+              : "Finalizing..."}
         </motion.p>
       </div>
     </motion.div>

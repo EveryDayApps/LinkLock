@@ -1,16 +1,21 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    Database,
-    FileText,
-    Info,
-    Lock,
-    Menu,
-    Settings,
-    User,
+  Database,
+  FileText,
+  Info,
+  Lock,
+  Menu,
+  Settings,
+  User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MasterPasswordGuard } from "./components/MasterPasswordGuard";
-import { Sheet, SheetContent } from "./components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "./components/ui/sheet";
 import type { ScreenType } from "./models/types";
 import { AboutScreen } from "./screens/AboutScreen";
 import { ImportExportScreen } from "./screens/ImportExportScreen";
@@ -93,6 +98,11 @@ function App() {
       <div className="min-h-screen bg-background text-foreground">
         <div className="relative h-screen">
           <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+            <SheetDescription className="sr-only">
+              Access different sections of Link Lock including rules, profiles,
+              settings, and more
+            </SheetDescription>
             {/* Main Content */}
             <div className="h-screen overflow-auto bg-background">
               {/* Drawer Toggle Button */}
@@ -123,7 +133,6 @@ function App() {
                 </motion.div>
               </AnimatePresence>
             </div>
-
             {/* Sidebar */}
             <SheetContent side="left" className="w-64 p-6" hideCloseButton>
               <div className="mb-8">
