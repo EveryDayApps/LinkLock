@@ -99,6 +99,7 @@ export function ProfilesTab() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const loadProfiles = useCallback(async () => {
     const allProfiles = await profileManager.getAllProfiles();
@@ -253,11 +254,11 @@ export function ProfilesTab() {
                 animate="visible"
                 exit="exit"
               >
-                <motion.div
-                  whileHover={{ scale: 1.01, y: -2 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                <Card
+                  className={`border-2 transition-all duration-200 hover:border-primary/50 hover:shadow-md ${
+                    openDropdownId === profile.id ? "border-primary/50 shadow-md" : "border-transparent"
+                  }`}
                 >
-                  <Card className="transition-shadow hover:shadow-md">
                     <CardContent className="flex items-center justify-center">
                       <div className="flex items-center justify-between w-full p-2">
                         <div
@@ -307,7 +308,10 @@ export function ProfilesTab() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <DropdownMenu>
+                          <DropdownMenu
+                            open={openDropdownId === profile.id}
+                            onOpenChange={(open) => setOpenDropdownId(open ? profile.id : null)}
+                          >
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
                                 <MoreVertical className="w-4 h-4" />
@@ -352,7 +356,6 @@ export function ProfilesTab() {
                       </div>
                     </CardContent>
                   </Card>
-                </motion.div>
               </motion.div>
             );
           })}

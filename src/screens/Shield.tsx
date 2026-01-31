@@ -123,18 +123,6 @@ export default function UnlockScreen() {
               >
                 {isUnlocking ? "Unlocking..." : "Unlock"}
               </Button>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    console.log("Forgot password clicked");
-                  }}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
-                >
-                  Forgot password?
-                </button>
-              </div>
             </div>
           </CardContent>
         </Card>

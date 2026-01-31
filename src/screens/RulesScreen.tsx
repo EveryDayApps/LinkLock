@@ -3,6 +3,7 @@ import {
   Clock,
   Edit,
   FileText,
+  Filter,
   Lock,
   MoreVertical,
   Plus,
@@ -32,6 +33,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
 
 const containerVariants = {
@@ -48,26 +56,27 @@ const containerVariants = {
 const itemVariants = {
   hidden: {
     opacity: 0,
-    y: -20,
-    scale: 0.96,
+    y: 20,
+    scale: 0.95,
   },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     transition: {
-      duration: 0.4,
-      ease: [0.25, 0.46, 0.45, 0.94] as const,
-      opacity: { duration: 0.3 },
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 24,
+      mass: 0.8,
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.93,
-    y: 10,
+    scale: 0.9,
+    x: -20,
     transition: {
       duration: 0.2,
-      ease: [0.4, 0, 0.6, 1] as const,
+      ease: "easeOut" as const,
     },
   },
 };
@@ -103,6 +112,8 @@ export function RulesScreen() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<LinkRule | null>(null);
+  const [filterProfileId, setFilterProfileId] = useState<string>("all");
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     const allRules = await ruleManager.getAllRules();
@@ -226,6 +237,13 @@ export function RulesScreen() {
     return ruleProfiles.map((p) => p.name).join(", ") || "No profiles";
   };
 
+  const effectiveFilterId = filterProfileId;
+
+  const filteredRules =
+    effectiveFilterId === "all"
+      ? rules
+      : rules.filter((rule) => rule.profileIds.includes(effectiveFilterId));
+
   return (
     <div className="h-full flex flex-col p-8 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8 flex-shrink-0 ">
@@ -244,33 +262,51 @@ export function RulesScreen() {
         </Button>
       </div>
 
+      <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+        <Filter className="w-4 h-4 text-muted-foreground" />
+        <Select value={effectiveFilterId} onValueChange={setFilterProfileId}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by profile" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Profiles</SelectItem>
+            {profiles.map((profile) => (
+              <SelectItem key={profile.id} value={profile.id}>
+                {profile.name}
+                {profile.id === activeProfileId && " (Active)"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {effectiveFilterId !== "all" && (
+          <span className="text-sm text-muted-foreground">
+            {filteredRules.length} rule{filteredRules.length !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
       <motion.div
         className="space-y-3 flex-1 overflow-y-auto p-2"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <AnimatePresence>
-          {rules.map((rule, index) => (
+        <AnimatePresence mode="popLayout">
+          {filteredRules.map((rule, index) => (
             <motion.div
               key={rule.id}
+              layout
               variants={itemVariants}
               custom={index}
               initial="hidden"
               animate="visible"
               exit="exit"
             >
-              <motion.div
-                whileHover={{ scale: 1.01, y: -2 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              <Card
+                className={`border-2 transition-all duration-200 hover:border-primary/50 hover:shadow-md ${
+                  openDropdownId === rule.id ? "border-primary/50 shadow-md" : "border-transparent"
+                } ${!rule.enabled ? "opacity-60" : ""}`}
               >
-                <Card
-                  className={
-                    !rule.enabled
-                      ? "opacity-60 transition-shadow hover:shadow-md"
-                      : "transition-shadow hover:shadow-md"
-                  }
-                >
                   <CardContent className="flex items-center justify-center">
                     <div className="flex items-center justify-between w-full p-2">
                       <div className="flex items-center gap-4 flex-1">
@@ -337,7 +373,10 @@ export function RulesScreen() {
                             onCheckedChange={() => handleToggleRule(rule.id)}
                           />
                         </motion.div>
-                        <DropdownMenu>
+                        <DropdownMenu
+                          open={openDropdownId === rule.id}
+                          onOpenChange={(open) => setOpenDropdownId(open ? rule.id : null)}
+                        >
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
                               <MoreVertical className="w-4 h-4" />
@@ -364,12 +403,11 @@ export function RulesScreen() {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
             </motion.div>
           ))}
         </AnimatePresence>
 
-        {rules.length === 0 && (
+        {filteredRules.length === 0 && (
           <motion.div
             className="text-center py-16"
             variants={emptyStateVariants}
@@ -382,18 +420,36 @@ export function RulesScreen() {
             >
               <FileText className="w-8 h-8 text-muted-foreground" />
             </motion.div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              No rules yet
-            </h3>
-            <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Create your first rule to start managing website access
-            </p>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button onClick={() => setAddModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Your First Rule
-              </Button>
-            </motion.div>
+            {rules.length === 0 ? (
+              <>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No rules yet
+                </h3>
+                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                  Create your first rule to start managing website access
+                </p>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button onClick={() => setAddModalOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Your First Rule
+                  </Button>
+                </motion.div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No matching rules
+                </h3>
+                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                  No rules found for the selected profile
+                </p>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="secondary" onClick={() => setFilterProfileId("all")} >
+                    Clear Filter
+                  </Button>
+                </motion.div>
+              </>
+            )}
           </motion.div>
         )}
       </motion.div>

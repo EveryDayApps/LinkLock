@@ -3,3 +3,5 @@
 - add icon for the extension
 - write description for the extension
 - test the extension in different browsers
+- change icons used in the app
+- toggle for encrypting of data

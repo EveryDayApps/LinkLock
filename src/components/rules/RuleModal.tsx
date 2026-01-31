@@ -203,11 +203,8 @@ export function RuleModal({
       if (isEditMode && rule) {
         populateFromRule(rule);
       } else if (!isEditMode) {
-        // For add mode, set default profile
-        const defaultProfileId = getDefaultProfileId();
-        if (defaultProfileId) {
-          setSelectedProfiles([defaultProfileId]);
-        }
+        // For add mode, reset the entire form to defaults
+        resetForm();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
