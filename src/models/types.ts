@@ -9,9 +9,7 @@ import type { LinkLockDatabase } from "../services/database/db";
 import type { EncryptionService } from "../services/encryption";
 import type { PasswordService } from "../services/passwordService";
 import type { ProfileManager } from "../services/profileManager";
-import type { RuleEvaluator } from "../services/ruleEvaluator";
 import type { RuleManager } from "../services/ruleManager";
-import type { UnlockSessionManager } from "../services/unlockSessionManager";
 import type { LinkRule, Profile } from "./interfaces";
 
 // ============================================
@@ -216,8 +214,6 @@ export interface ImportResult {
  * Dependencies required by the message handler
  */
 export interface MessageHandler {
-  ruleEvaluator: RuleEvaluator;
-  sessionManager: UnlockSessionManager;
   profileManager: ProfileManager;
   ruleManager: RuleManager;
   db: LinkLockDatabase;
@@ -239,10 +235,6 @@ export interface Services {
   // Data services
   profileManager: ProfileManager;
   ruleManager: RuleManager;
-
-  // Business logic services
-  ruleEvaluator: RuleEvaluator;
-  unlockSessionManager: UnlockSessionManager;
 
   // Database
   db: LinkLockDatabase;

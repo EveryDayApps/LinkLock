@@ -9,9 +9,7 @@ import { LinkLockLocalDb } from "../database/local_lb";
 import { EncryptionService } from "../encryption";
 import { PasswordService } from "../passwordService";
 import { ProfileManager } from "../profileManager";
-import { RuleEvaluator } from "../ruleEvaluator";
 import { RuleManager } from "../ruleManager";
-import { UnlockSessionManager } from "../unlockSessionManager";
 import type { ServiceOptions, Services } from "./types";
 
 /**
@@ -19,25 +17,11 @@ import type { ServiceOptions, Services } from "./types";
  * This is the single source of truth for service creation
  */
 export function createServices(_options?: ServiceOptions): Services {
-  // Step 1: Use singleton database instance
-
-  // Step 2: Create services with no dependencies
   const passwordService = new PasswordService();
   const encryptionService = new EncryptionService();
-
-  // Step 3: Create services that depend on step 1 & 2
   const authManager = new AuthManager(db, passwordService, encryptionService);
-
-  // Step 4: Create session and state management services
-  const unlockSessionManager = new UnlockSessionManager();
-
-  // Step 5: Create business logic services
-  const ruleEvaluator = new RuleEvaluator(unlockSessionManager);
-
-  // Step 6: Create data management services
   const profileManager = new ProfileManager(db);
   const ruleManager = new RuleManager(db);
-
   const localDb = new LinkLockLocalDb();
 
   // Return all services
@@ -46,18 +30,12 @@ export function createServices(_options?: ServiceOptions): Services {
     authManager,
     passwordService,
     encryptionService,
-
     // Data services
     profileManager,
     ruleManager,
-
-    // Business logic services
-    ruleEvaluator,
-    unlockSessionManager,
-    localDb,
-
     // Database
     db,
+    localDb,
   };
 }
 

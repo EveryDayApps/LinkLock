@@ -1,13 +1,13 @@
 
+import type { LockMode, RuleAction } from "@/models/enums";
 import { browser, type Browser } from "webextension-polyfill-ts";
-import type { RuleAction, UnlockDuration } from "../../models/enums";
 
 export interface ActiveTabSession {
   tabId: number;
   ruleId: string;
   action: RuleAction;
+  lockMode?: LockMode
   url: string;
-  unlockDuration?: UnlockDuration;
   password?: string;
   unlockedAt?: number;
 }
@@ -55,6 +55,17 @@ export class LinkLockLocalDb {
   async clearAllSessions(): Promise<void> {
     await this.browser.storage.local.remove(STORAGE_KEYS.ACTIVE_SESSIONS);
   }
-}
 
+
+  //clear sessions which  have UnlockDuration as session
+  async clearExpiredSessions(): Promise<void> {
+    const sessions = await this.getSessionMap();
+
+    const filteredSessions = Object.fromEntries(
+      Object.entries(sessions).filter(([_, session]) => session.lockMode !== "session_unlock")
+    );
+
+    await this.setSessionMap(filteredSessions);
+  }
+}
 export const localDb = new LinkLockLocalDb();

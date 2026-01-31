@@ -1,23 +1,6 @@
-// ============================================
-// Data Models and Interfaces
-// Type hierarchy for LinkLock data models
-// ============================================
-//
-// Data Flow:
-// IndexedDB -> LinkRule (full model) -> LocalStorageRule (subset) -> chrome.storage.local
-//
-// This hierarchy enables:
-// 1. Full data in IndexedDB for UI and management
-// 2. Minimal data in local storage for fast runtime access
-// 3. Type-safe transformations between layers
-// ============================================
 
-import type {
-  LocalStorageLockOptions,
-  LockOptions,
-  RedirectOptions,
-  RuleAction
-} from "./enums";
+
+import type { LockMode, RuleAction } from "./enums";
 
 // ============================================
 // Profile Types
@@ -35,166 +18,6 @@ export interface ProfileWithRuleCount extends Profile {
   ruleCount: number;
 }
 
-// ============================================
-// Base Rule Types (shared fields)
-// ============================================
-
-/**
- * Core fields present in all rule types
- * This is the foundation for all rule-related interfaces
- */
-export interface BaseRule {
-  id: string;
-  urlPattern: string;
-  action: RuleAction;
-  applyToAllSubdomains: boolean;
-  enabled: boolean;
-}
-
-/**
- * Metadata fields for IndexedDB storage
- * These are only needed for the full model, not runtime
- */
-export interface RuleMetadata {
-  profileIds: string[]; // Multiple profiles can use same rule
-  createdAt: number;
-  updatedAt: number;
-}
-
-// ============================================
-// IndexedDB Rule Types (Full Model)
-// ============================================
-
-/**
- * Full LinkRule stored in IndexedDB
- * Contains all data including metadata and full options
- */
-export interface LinkRule extends BaseRule, RuleMetadata {
-  lockOptions?: LockOptions;
-  redirectOptions?: RedirectOptions;
-}
-
-/**
- * LinkRule with action: "lock"
- * Type guard helper for lock rules
- */
-export interface LinkRuleLock extends LinkRule {
-  action: "lock";
-  lockOptions: LockOptions;
-}
-
-/**
- * LinkRule with action: "redirect"
- * Type guard helper for redirect rules
- */
-export interface LinkRuleRedirect extends LinkRule {
-  action: "redirect";
-  redirectOptions: RedirectOptions;
-}
-
-/**
- * LinkRule with action: "block"
- * Type guard helper for block rules
- */
-export interface LinkRuleBlock extends LinkRule {
-  action: "block";
-}
-
-// ============================================
-// Type Guards for Rule Types
-// ============================================
-
-export function isLockRule(rule: LinkRule): rule is LinkRuleLock {
-  return rule.action === "lock" && rule.lockOptions !== undefined;
-}
-
-export function isRedirectRule(rule: LinkRule): rule is LinkRuleRedirect {
-  return rule.action === "redirect" && rule.redirectOptions !== undefined;
-}
-
-export function isBlockRule(rule: LinkRule): rule is LinkRuleBlock {
-  return rule.action === "block";
-}
-
-// ============================================
-// Local Storage Rule Types (Subset Model)
-// Optimized for runtime performance in background.js
-// ============================================
-
-/**
- * Base local storage rule - minimal fields for runtime
- * Extends BaseRule without metadata (no profileIds, timestamps)
- */
-export interface LocalStorageRule extends BaseRule {
-  // Only present if action is "lock"
-  lockOptions?: LocalStorageLockOptions;
-  // Only present if action is "redirect" (flattened from redirectOptions)
-  redirectUrl?: string;
-}
-
-/**
- * Local storage rule with action: "lock"
- */
-export interface LocalStorageRuleLock extends LocalStorageRule {
-  action: "lock";
-  lockOptions: LocalStorageLockOptions;
-}
-
-/**
- * Local storage rule with action: "redirect"
- */
-export interface LocalStorageRuleRedirect extends LocalStorageRule {
-  action: "redirect";
-  redirectUrl: string;
-}
-
-/**
- * Local storage rule with action: "block"
- */
-export interface LocalStorageRuleBlock extends LocalStorageRule {
-  action: "block";
-}
-
-// ============================================
-// Type Guards for Local Storage Rules
-// ============================================
-
-export function isLocalStorageLockRule(
-  rule: LocalStorageRule
-): rule is LocalStorageRuleLock {
-  return rule.action === "lock" && rule.lockOptions !== undefined;
-}
-
-export function isLocalStorageRedirectRule(
-  rule: LocalStorageRule
-): rule is LocalStorageRuleRedirect {
-  return rule.action === "redirect" && rule.redirectUrl !== undefined;
-}
-
-export function isLocalStorageBlockRule(
-  rule: LocalStorageRule
-): rule is LocalStorageRuleBlock {
-  return rule.action === "block";
-}
-
-// ============================================
-// Local Storage Core Types
-// For linklock_core storage key
-// ============================================
-
-/**
- * Core data stored in local storage under "linklock_core"
- * Contains essential runtime configuration
- */
-export interface LocalStorageCore {
-  masterPasswordHash: string;
-  currentProfileId: string;
-}
-
-
-// ============================================
-// Legacy Types (for backward compatibility)
-// ============================================
 
 export interface EncryptedData {
   encrypted: string;
@@ -213,11 +36,41 @@ export interface StorageData {
 }
 
 
+export interface BaseRule {
+  id: string;
+  urlPattern: string;
+  action: RuleAction;
+  applyToAllSubdomains: boolean;
+  enabled: boolean;
+}
+
+/**
+ * Metadata fields for IndexedDB storage
+ * These are only needed for the full model, not runtime
+ */
+export interface RuleMetadata {
+  profileIds: string[]; // Multiple profiles can use same rule
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface LinkRule extends BaseRule, RuleMetadata {
+  lockOptions?: LockOptions;
+  redirectOptions?: RedirectOptions;
+}
+
+export interface LockOptions extends BaseLockOptions {
+  customPassword?: string;
+  customPasswordHash?: string;
+}
 
 
-// ============================================
-// Re-export enums for convenience
-// ============================================
+export interface BaseLockOptions {
+  lockMode: LockMode;
+  timedDuration?: number; // in minutes, only for timed_unlock
+}
 
-export type { LocalStorageLockOptions, LockMode, LockOptions, RedirectOptions, RuleAction } from "./enums";
 
+export interface RedirectOptions {
+  redirectUrl: string;
+}

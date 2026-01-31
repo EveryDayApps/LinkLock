@@ -14,7 +14,7 @@ import { BackgroundStateStore } from "./BackgroundStateStore";
 import { extractDomainAndVerify } from "./BrowserUtils";
 
 
-// Re-export BackgroundState for convenience
+// Re-export BackgroundState for convenience 
 export type { BackgroundState } from "./BackgroundStateStore";
 
 /**
@@ -46,6 +46,7 @@ export class BackgroundManager {
 
     // Initialize the state store (sets up listener, handlers, and loads data)
     await this.store.initialize();
+    await this.localDb.clearExpiredSessions();
 
     this.isInitialized = true;
     backgroundLogger.info("BackgroundManager initialized successfully");
@@ -143,11 +144,32 @@ export class BackgroundManager {
       const isPasswordValid = await this.authManager.verifyMasterPassword(atob(hashPassword || ""));
       if (isPasswordValid.success) {
         backgroundLogger.info(`[BackgroundManager] Active session password is valid for ${details.url}, allowing navigation.`);
+
+        activeSession.unlockedAt = Date.now();
+        await this.localDb.setSession(activeSession);
+
+        // if (activeSession.lockMode && activeSession.lockMode === "timed_unlock") {
+        //   //unlockDuration is in minutes
+        //   //check if the session is still valid
+        //   const currentTime = Date.now();
+        //   const timeToBeLocked = matchingRule.lockOptions?.timedDuration || 0;
+        //   const unlockTime = activeSession.unlockedAt || 0;
+        //   const elapsedTime = currentTime - unlockTime;
+        //   const durationInMs = timeToBeLocked * 60 * 1000;
+        //   if (elapsedTime < durationInMs) {
+        //     backgroundLogger.info(`[BackgroundManager] Active session is still valid for ${details.url}, allowing navigation.`);
+        //     return;
+        //   }
+
+        // }
+        // else
         return;
       }
     }
+
+    matchingRule.lockOptions?.lockMode
     // Handle the rule action
-    const activeTabSession = { tabId: details.tabId, ruleId: matchingRule.id, action: matchingRule.action, url: details.url }
+    const activeTabSession = { tabId: details.tabId, ruleId: matchingRule.id, action: matchingRule.action, url: details.url, unlockDuration: matchingRule.action, lockMode: matchingRule.lockOptions?.lockMode };
     await this.localDb.setSession(activeTabSession);
     const urlBase64 = btoa(details.url);
     const unlockUrl = browser.runtime.getURL("unlock.html") + "?url=" + urlBase64;

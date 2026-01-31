@@ -70,7 +70,10 @@ export default function UnlockScreen() {
               </div>
 
               <div className="space-y-1">
-                <h1 className="text-xl font-semibold text-foreground">
+                <h1
+                  className="text-xl font-semibold text-foreground truncate max-w-full"
+                  title={session?.url || "Site"}
+                >
                   {session?.url || "Site"}
                 </h1>
                 <p className="text-sm text-muted-foreground">
