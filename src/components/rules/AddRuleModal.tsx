@@ -79,7 +79,7 @@ interface AddRuleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddRule: (
-    rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">
+    rule: Omit<LinkRule, "id" | "createdAt" | "updatedAt">,
   ) => Promise<{ success: boolean; error?: string }>;
   profiles: Profile[];
   activeProfileId: string | null;
@@ -95,12 +95,42 @@ export function AddRuleModal({
   const [urlPattern, setUrlPattern] = useState("");
   const [action, setAction] = useState<RuleAction>("lock");
   const [applyToAllSubdomains, setApplyToAllSubdomains] = useState(false);
+  const [applyToAllProfiles, setApplyToAllProfiles] = useState(true);
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([]);
 
   // Lock options
   const [lockMode, setLockMode] = useState<LockMode>("always_ask");
-  const [timedDuration, setTimedDuration] = useState<number>(5);
+  const [timedDurationInput, setTimedDurationInput] = useState<string>("5");
   const [customPassword, setCustomPassword] = useState("");
+
+  // Helper to parse URL to domain
+  const parseUrlToDomain = (input: string): string => {
+    const trimmed = input.trim();
+    if (!trimmed) return trimmed;
+
+    try {
+      // If it looks like a URL with protocol, parse it
+      if (trimmed.includes("://")) {
+        const url = new URL(trimmed);
+        return url.hostname;
+      }
+      // If it starts with www., try parsing with https://
+      if (trimmed.startsWith("www.")) {
+        const url = new URL(`https://${trimmed}`);
+        return url.hostname;
+      }
+    } catch {
+      // If parsing fails, return as-is
+    }
+    return trimmed;
+  };
+
+  const handleUrlBlur = () => {
+    const parsed = parseUrlToDomain(urlPattern);
+    if (parsed !== urlPattern) {
+      setUrlPattern(parsed);
+    }
+  };
 
   // Redirect options
   const [redirectUrl, setRedirectUrl] = useState("");
@@ -110,6 +140,9 @@ export function AddRuleModal({
 
   useEffect(() => {
     if (open) {
+      // Clear any previous errors when modal opens
+      setError("");
+
       // Default to active profile, or "default" profile, or first available profile
       const defaultProfileId =
         activeProfileId ||
@@ -127,6 +160,7 @@ export function AddRuleModal({
     setUrlPattern("");
     setAction("lock");
     setApplyToAllSubdomains(false);
+    setApplyToAllProfiles(true);
 
     // Default to active profile, or "default" profile, or first available profile
     const defaultProfileId =
@@ -136,7 +170,7 @@ export function AddRuleModal({
 
     setSelectedProfiles(defaultProfileId ? [defaultProfileId] : []);
     setLockMode("always_ask");
-    setTimedDuration(5);
+    setTimedDurationInput("5");
     setCustomPassword("");
     setRedirectUrl("");
     setError("");
@@ -152,7 +186,7 @@ export function AddRuleModal({
       return;
     }
 
-    if (selectedProfiles.length === 0) {
+    if (!applyToAllProfiles && selectedProfiles.length === 0) {
       setError("At least one profile must be selected");
       return;
     }
@@ -162,6 +196,7 @@ export function AddRuleModal({
       return;
     }
 
+    const timedDuration = Number(timedDurationInput) || 0;
     if (
       action === "lock" &&
       lockMode === "timed_unlock" &&
@@ -177,7 +212,8 @@ export function AddRuleModal({
       urlPattern: urlPattern.trim(),
       action,
       applyToAllSubdomains,
-      profileIds: selectedProfiles,
+      applyToAllProfiles,
+      profileIds: applyToAllProfiles ? [] : selectedProfiles,
       enabled: true, // Always enabled by default, user can toggle from list
       lockOptions:
         action === "lock"
@@ -223,17 +259,17 @@ export function AddRuleModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="!max-w-3xl max-h-[90vh] overflow-y-auto"
+        className="w-[600px] max-h-[90vh] max-w-[700px] flex flex-col overflow-hidden"
         onKeyDown={handleKeyDown}
       >
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Add New Rule</DialogTitle>
           <DialogDescription>
             Create a new rule to lock, block, or redirect a website
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 flex-1 overflow-y-auto px-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           {/* URL Pattern */}
           <div className="space-y-2">
             <Label htmlFor="urlPattern">
@@ -244,6 +280,7 @@ export function AddRuleModal({
               placeholder="example.com or *.example.com"
               value={urlPattern}
               onChange={(e) => setUrlPattern(e.target.value)}
+              onBlur={handleUrlBlur}
             />
             <p className="text-xs text-muted-foreground">
               Enter a domain (e.g., example.com) or use wildcards
@@ -253,7 +290,7 @@ export function AddRuleModal({
 
           {/* Apply to All Subdomains */}
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
+            <div className="space-y-0.5 pr-4">
               <Label htmlFor="subdomains">Apply to All Subdomains</Label>
               <p className="text-xs text-muted-foreground">
                 Match all subdomains (e.g., mail.google.com, drive.google.com
@@ -338,11 +375,6 @@ export function AddRuleModal({
                 animate="visible"
                 exit="exit"
               >
-                <h4 className="font-medium flex items-center gap-2">
-                  <Lock className="w-4 h-4" />
-                  Lock Options
-                </h4>
-
                 {/* Lock Mode */}
                 <div className="space-y-2">
                   <Label htmlFor="lockMode">Lock Mode</Label>
@@ -391,9 +423,10 @@ export function AddRuleModal({
                           id="timedDuration"
                           type="number"
                           min="1"
-                          value={timedDuration}
+                          placeholder="5"
+                          value={timedDurationInput}
                           onChange={(e) =>
-                            setTimedDuration(Number(e.target.value))
+                            setTimedDurationInput(e.target.value)
                           }
                         />
                       </div>
@@ -430,11 +463,6 @@ export function AddRuleModal({
                 animate="visible"
                 exit="exit"
               >
-                <h4 className="font-medium flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  Redirect Options
-                </h4>
-
                 <div className="space-y-2">
                   <Label htmlFor="redirectUrl">
                     Redirect URL <span className="text-destructive">*</span>
@@ -450,21 +478,43 @@ export function AddRuleModal({
             )}
           </AnimatePresence>
 
-          {/* Profile Selection */}
-          <div className="space-y-2">
-            <Label>
-              Apply to Profiles <span className="text-destructive">*</span>
-            </Label>
-            <MultiSelect
-              options={profileOptions}
-              selected={selectedProfiles}
-              onChange={setSelectedProfiles}
-              placeholder="Select profiles..."
+          {/* Apply to All Profiles */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 pr-4">
+              <Label htmlFor="allProfiles">Apply to All Profiles</Label>
+              <p className="text-xs text-muted-foreground">
+                Enable this rule for all profiles automatically
+              </p>
+            </div>
+            <Switch
+              id="allProfiles"
+              checked={applyToAllProfiles}
+              onCheckedChange={setApplyToAllProfiles}
             />
-            <p className="text-xs text-muted-foreground">
-              Select one or more profiles where this rule should be active
-            </p>
           </div>
+
+          {/* Profile Selection - only visible when not applying to all profiles */}
+          <AnimatePresence>
+            {!applyToAllProfiles && (
+              <motion.div
+                className="space-y-2 overflow-hidden"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <MultiSelect
+                  options={profileOptions}
+                  selected={selectedProfiles}
+                  onChange={setSelectedProfiles}
+                  placeholder="Select profiles..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Select one or more profiles where this rule should be active
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Error Message */}
           <AnimatePresence>
@@ -482,7 +532,7 @@ export function AddRuleModal({
           </AnimatePresence>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button
             variant="secondary"
             onClick={() => {

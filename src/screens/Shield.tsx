@@ -22,10 +22,8 @@ export default function UnlockScreen() {
       const urlParam = urlParams.get("url");
       if (urlParam) {
         const decodedUrl = atob(urlParam);
-        console.log("Decoded URL:", decodedUrl);
         setUrl(decodedUrl);
         const fetchedSession = await localDb.getSession(decodedUrl);
-        console.log("Fetched session:", fetchedSession);
         if (fetchedSession) setSession(fetchedSession);
       }
     };
@@ -43,6 +41,7 @@ export default function UnlockScreen() {
         return;
       }
       session.password = btoa(password);
+      session.unlockedAt = Date.now();
       await localDb.setSession(session);
       window.open(url, "_self");
     } catch (err) {

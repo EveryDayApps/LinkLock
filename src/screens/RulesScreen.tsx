@@ -158,9 +158,7 @@ export function RulesScreen() {
 
   const handleUpdateRule = async (
     ruleId: string,
-    updates: Partial<
-      Omit<LinkRule, "id" | "createdAt" | "updatedAt" | "profileIds">
-    >,
+    updates: Partial<Omit<LinkRule, "id" | "createdAt" | "updatedAt">>,
   ): Promise<{ success: boolean; error?: string }> => {
     const result = await ruleManager.updateRule(ruleId, updates);
     if (result.success) {
@@ -421,6 +419,7 @@ export function RulesScreen() {
         onOpenChange={setEditModalOpen}
         rule={selectedRule}
         onUpdateRule={handleUpdateRule}
+        profiles={profiles}
       />
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

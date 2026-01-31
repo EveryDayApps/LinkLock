@@ -136,34 +136,46 @@ export class BackgroundManager {
 
     if (activeSession) {
 
-      backgroundLogger.info(`[BackgroundManager] Active session found for ${details.url}:`, activeSession);
+      backgroundLogger.info(`[BackgroundManager] Found active session for ${details.url}:`, activeSession);
+
+      backgroundLogger.info(`[BackgroundManager] Active session lock mode for ${details.url}:`, activeSession.lockMode);
 
       // If there's an active session, we can skip handling the rule action
       const hashPassword = activeSession.password;
 
       const isPasswordValid = await this.authManager.verifyMasterPassword(atob(hashPassword || ""));
+
       if (isPasswordValid.success) {
-        backgroundLogger.info(`[BackgroundManager] Active session password is valid for ${details.url}, allowing navigation.`);
 
-        activeSession.unlockedAt = Date.now();
-        await this.localDb.setSession(activeSession);
+        // case 1 :  lockMode is session_unlock
+        if (activeSession.lockMode && activeSession.lockMode === "session_unlock") {
+          return;
+        }
 
-        // if (activeSession.lockMode && activeSession.lockMode === "timed_unlock") {
-        //   //unlockDuration is in minutes
-        //   //check if the session is still valid
-        //   const currentTime = Date.now();
-        //   const timeToBeLocked = matchingRule.lockOptions?.timedDuration || 0;
-        //   const unlockTime = activeSession.unlockedAt || 0;
-        //   const elapsedTime = currentTime - unlockTime;
-        //   const durationInMs = timeToBeLocked * 60 * 1000;
-        //   if (elapsedTime < durationInMs) {
-        //     backgroundLogger.info(`[BackgroundManager] Active session is still valid for ${details.url}, allowing navigation.`);
-        //     return;
-        //   }
+        //case 2 : lockMode is timed_unlock
+        else if (activeSession.lockMode && activeSession.lockMode === "timed_unlock") {
+          //unlockDuration is in minutes
+          //check if the session is still valid
+          const currentTime = Date.now();
+          const timeToBeLocked = matchingRule.lockOptions?.timedDuration || 0;
+          const unlockTime = activeSession.unlockedAt || 0;
+          const elapsedTime = currentTime - unlockTime;
+          const durationInMs = timeToBeLocked * 60 * 1000;
+          if (elapsedTime < durationInMs) {
+            return;
+          } else {
+            //session expired, navigate to unlock page
+            await this.navigateToUnlockPage(details.tabId, details.url);
+            return;
+          }
 
-        // }
-        // else
-        return;
+        }
+
+        //case 3 : lockMode is always_ask 
+        else if (activeSession.lockMode && activeSession.lockMode === "always_ask") {
+          if (activeSession.tabId === details.tabId) return;
+        }
+
       }
     }
 
@@ -171,10 +183,16 @@ export class BackgroundManager {
     // Handle the rule action
     const activeTabSession = { tabId: details.tabId, ruleId: matchingRule.id, action: matchingRule.action, url: details.url, unlockDuration: matchingRule.action, lockMode: matchingRule.lockOptions?.lockMode };
     await this.localDb.setSession(activeTabSession);
-    const urlBase64 = btoa(details.url);
-    const unlockUrl = browser.runtime.getURL("unlock.html") + "?url=" + urlBase64;
-    await browser.tabs.update(details.tabId, { url: `${unlockUrl}` });
+    await this.navigateToUnlockPage(details.tabId, details.url);
+  }
 
+  private navigateToUnlockPage = async (
+    tabId: number,
+    url: string,
+  ): Promise<void> => {
+    const urlBase64 = btoa(url);
+    const unlockUrl = browser.runtime.getURL("unlock.html") + "?url=" + urlBase64;
+    await browser.tabs.update(tabId, { url: `${unlockUrl}` });
   }
 
 }

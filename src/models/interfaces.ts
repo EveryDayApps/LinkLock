@@ -49,7 +49,8 @@ export interface BaseRule {
  * These are only needed for the full model, not runtime
  */
 export interface RuleMetadata {
-  profileIds: string[]; // Multiple profiles can use same rule
+  applyToAllProfiles: boolean; // If true, rule applies to all profiles
+  profileIds: string[]; // Only used when applyToAllProfiles is false
   createdAt: number;
   updatedAt: number;
 }
